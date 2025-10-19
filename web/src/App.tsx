@@ -411,7 +411,7 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400 truncate min-w-0">
-            {new URL(bookmark.url).hostname}
+            {bookmark.description ? bookmark.description : new URL(bookmark.url).hostname}
           </span>
           {showActions && (
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
