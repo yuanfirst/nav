@@ -148,6 +148,21 @@ export type Bookmark = {
 }
 export type Dataset = { version: number; categories: Category[]; bookmarks: Bookmark[]; updatedAt: string }
 
+// 获取 favicon URL 的工具函数
+function getFaviconUrl(bookmark: Bookmark): string {
+  // 如果用户自定义了图标，优先使用
+  if (bookmark.iconUrl) return bookmark.iconUrl;
+  
+  try {
+    const hostname = new URL(bookmark.url).hostname;
+    // 使用 DuckDuckGo 的 favicon 服务，对国内用户更友好
+    return `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+  } catch {
+    // 如果 URL 解析失败，返回默认图标
+    return '/favicon.ico';
+  }
+}
+
 function useDarkMode() {
   const [dark, setDark] = useState<boolean>(() => {
     const saved = localStorage.getItem('theme')
@@ -329,6 +344,7 @@ function SortableCategory({ category, bookmarks, onEdit, onDelete, onAddBookmark
 
 function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = false }: { bookmark: Bookmark; onEdit: () => void; onDelete: () => void; dragging?: boolean; showActions?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bookmark.id })
+  const [faviconError, setFaviconError] = useState(false)
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -348,6 +364,11 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
     window.open(bookmark.url, '_blank', 'noopener,noreferrer')
   }
 
+  // 处理 favicon 加载错误
+  const handleFaviconError = () => {
+    setFaviconError(true)
+  }
+
   return (
     <div 
       ref={setNodeRef} 
@@ -362,9 +383,10 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
     >
       <div className="relative flex-shrink-0">
         <img 
-          src={bookmark.iconUrl || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(bookmark.url)}&sz=32`} 
+          src={faviconError ? '/favicon.ico' : getFaviconUrl(bookmark)} 
           alt="" 
           className="w-8 h-8 rounded group-hover:scale-105 transition-transform duration-200" 
+          onError={handleFaviconError}
         />
         {bookmark.isPrivate && (
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
