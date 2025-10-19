@@ -238,6 +238,95 @@ function useDataset() {
   return { loading, dataset, setDataset, authed, reload: load }
 }
 
+function SortableCategory({ category, bookmarks, onEdit, onDelete, onAddBookmark, dragging, showActions = false, activeSection, bookmarksByCat, onEditBookmark, onDeleteBookmark }: { 
+  category: Category; 
+  bookmarks: Bookmark[]; 
+  onEdit: () => void; 
+  onDelete: () => void; 
+  onAddBookmark: () => void;
+  dragging?: boolean; 
+  showActions?: boolean;
+  activeSection: string;
+  bookmarksByCat: Record<string, Bookmark[]>;
+  onEditBookmark: (bookmark: Bookmark) => void;
+  onDeleteBookmark: (bookmark: Bookmark) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } as React.CSSProperties
+
+  return (
+    <section 
+      ref={setNodeRef}
+      style={style}
+      id={`cat-${category.id}`} 
+      className={clsx(
+        "mb-8 scroll-mt-24 animate-fade-in-up",
+        (isDragging || dragging) && 'opacity-50 scale-95 shadow-lg'
+      )}
+      {...attributes} {...listeners}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{category.name}</h2>
+          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+            {bookmarksByCat[category.id]?.length || 0}
+          </span>
+          {showActions && (
+            <div className="flex gap-1 ml-2">
+              <button 
+                onClick={onEdit} 
+                className="text-xs px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 transition-colors duration-200"
+                title="编辑分类"
+              >
+                ✏️
+              </button>
+              <button 
+                onClick={onDelete} 
+                className="text-xs px-2 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 transition-colors duration-200"
+                title="删除分类"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
+        </div>
+        {showActions && (
+          <button 
+            onClick={onAddBookmark} 
+            className="text-xs px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300 transition-colors duration-200"
+          >
+            ➕ 添加
+          </button>
+        )}
+      </div>
+      
+      <SortableContext items={bookmarks.map((b) => b.id)} strategy={rectSortingStrategy}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 3xl:grid-cols-8 gap-3">
+          {bookmarks.map((b, cardIndex) => (
+            <div 
+              key={b.id}
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${(cardIndex * 0.05)}s` }}
+            >
+              <SortableCard 
+                bookmark={b} 
+                onEdit={() => onEditBookmark(b)} 
+                onDelete={() => onDeleteBookmark(b)} 
+                dragging={false}
+                showActions={showActions}
+              />
+            </div>
+          ))}
+        </div>
+      </SortableContext>
+    </section>
+  )
+}
+
 function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = false }: { bookmark: Bookmark; onEdit: () => void; onDelete: () => void; dragging?: boolean; showActions?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bookmark.id })
   const style = {
@@ -340,10 +429,13 @@ export default function App() {
   const [modals, setModals] = useState({
     login: false,
     addCategory: false,
+    editCategory: false,
     addBookmark: false,
     editBookmark: false,
     deleteBookmark: false,
     deleteCategory: false,
+    backupManager: false,
+    configHelp: false,
     confirm: false
   })
   
@@ -368,6 +460,10 @@ export default function App() {
     onConfirm: () => {},
     type: 'danger' as 'danger' | 'warning' | 'info'
   })
+  
+  // 备份管理状态
+  const [backups, setBackups] = useState<Array<{ key: string; timestamp: number }>>([])
+  const [loadingBackups, setLoadingBackups] = useState(false)
   
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -406,7 +502,34 @@ export default function App() {
     const fromId = String(active.id)
     const toId = String(over.id)
     if (fromId === toId) return
-    // Find source and target info
+    
+    // Check if dragging categories
+    const fromCategory = dataset.categories.find((c) => c.id === fromId)
+    const toCategory = dataset.categories.find((c) => c.id === toId)
+    
+    if (fromCategory && toCategory) {
+      // Category drag
+      const newCategories = [...dataset.categories]
+      const fromIndex = newCategories.findIndex((c) => c.id === fromId)
+      const toIndex = newCategories.findIndex((c) => c.id === toId)
+      const newList = arrayMove(newCategories, fromIndex, toIndex)
+      newList.forEach((c, i) => (c.order = i))
+      
+      const next: Dataset = { ...dataset, categories: newList }
+      setDataset(next)
+      try {
+        await fetch('/api/sort', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ categoriesOrder: newList.map(c => c.id) }) 
+        })
+      } catch (e) {
+        // ignore
+      }
+      return
+    }
+    
+    // Bookmark drag (existing logic)
     const from = dataset.bookmarks.find((b) => b.id === fromId)
     const to = dataset.bookmarks.find((b) => b.id === toId)
     if (!from || !to) return
@@ -465,6 +588,36 @@ export default function App() {
       reload(true)
     } catch (error) {
       showConfirm('添加失败', `添加分类失败: ${error}`, 'warning')
+    }
+  }
+
+  function openEditCategory(category: Category) {
+    setFormData(prev => ({ 
+      ...prev, 
+      categoryName: category.name,
+      selectedCategory: category
+    }))
+    setModals(prev => ({ ...prev, editCategory: true }))
+  }
+
+  async function editCategory() {
+    if (!formData.categoryName.trim() || !formData.selectedCategory) return
+    try {
+      const res = await fetch(`/api/categories/${formData.selectedCategory.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.categoryName })
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        showConfirm('编辑失败', `编辑分类失败: ${error.error || '未知错误'}`, 'warning')
+        return
+      }
+      setModals(prev => ({ ...prev, editCategory: false }))
+      showConfirm('编辑成功', '分类编辑成功！', 'info')
+      reload(true)
+    } catch (error) {
+      showConfirm('编辑失败', `编辑分类失败: ${error}`, 'warning')
     }
   }
 
@@ -648,6 +801,63 @@ export default function App() {
     }
   }
 
+  function openBackupManager() {
+    setModals(prev => ({ ...prev, backupManager: true }))
+    loadBackups()
+  }
+
+  async function loadBackups() {
+    setLoadingBackups(true)
+    try {
+      const res = await fetch('/api/backups')
+      if (res.ok) {
+        const data = await res.json()
+        setBackups(data.items || [])
+      } else {
+        showConfirm('加载失败', '无法加载备份列表', 'warning')
+      }
+    } catch (error) {
+      showConfirm('加载失败', `加载备份列表失败: ${error}`, 'warning')
+    } finally {
+      setLoadingBackups(false)
+    }
+  }
+
+  function openRestoreBackup(backup: { key: string; timestamp: number }) {
+    const date = new Date(backup.timestamp).toLocaleString()
+    setConfirmData({
+      title: '确认恢复备份',
+      message: `确定要恢复到备份 "${date}" 吗？当前数据将被覆盖，此操作不可撤销。`,
+      onConfirm: () => restoreBackup(backup.key),
+      type: 'warning'
+    })
+    setModals(prev => ({ ...prev, confirm: true }))
+  }
+
+  async function restoreBackup(key: string) {
+    try {
+      const res = await fetch('/api/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      })
+      if (res.ok) {
+        setModals(prev => ({ ...prev, confirm: false }))
+        showConfirm('恢复成功', '备份已成功恢复！', 'info')
+        reload(true)
+      } else {
+        const error = await res.json()
+        showConfirm('恢复失败', `恢复备份失败: ${error.error || '未知错误'}`, 'warning')
+      }
+    } catch (error) {
+      showConfirm('恢复失败', `恢复备份失败: ${error}`, 'warning')
+    }
+  }
+
+  function openConfigHelp() {
+    setModals(prev => ({ ...prev, configHelp: true }))
+  }
+
   // 显示确认对话框的辅助函数
   function showConfirm(title: string, message: string, type: 'danger' | 'warning' | 'info' = 'info') {
     setConfirmData({
@@ -714,12 +924,26 @@ export default function App() {
                     {manage ? '✅ 管理' : '⚙️ 管理'}
                   </button>
                   {manage && (
-                    <button 
-                      onClick={openAddCategory} 
-                      className="btn-primary text-sm flex items-center gap-1"
-                    >
-                      ➕ 新增分类
-                    </button>
+                    <>
+                      <button 
+                        onClick={openAddCategory} 
+                        className="btn-primary text-sm flex items-center gap-1"
+                      >
+                        ➕ 新增分类
+                      </button>
+                      <button 
+                        onClick={openBackupManager} 
+                        className="btn-secondary text-sm flex items-center gap-1"
+                      >
+                        💾 备份管理
+                      </button>
+                      <button 
+                        onClick={openConfigHelp} 
+                        className="btn-secondary text-sm flex items-center gap-1"
+                      >
+                        ⚙️ 配置说明
+                      </button>
+                    </>
                   )}
                   <button 
                     onClick={logout} 
@@ -782,61 +1006,24 @@ export default function App() {
         
         {!loading && dataset && (
           <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            {categories.map((cat, index) => (
-              <section 
-                key={cat.id} 
-                id={`cat-${cat.id}`} 
-                className="mb-8 scroll-mt-24 animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{cat.name}</h2>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
-                      {bookmarksByCat[cat.id]?.length || 0}
-                    </span>
-                    {manage && authed && (
-                      <button 
-                        onClick={() => openDeleteCategory(cat)} 
-                        className="text-xs px-2 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 transition-colors duration-200 ml-2"
-                        title="删除分类"
-                      >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-                  {manage && authed && (
-                    <button 
-                      onClick={() => openAddBookmark(cat.id)} 
-                      className="text-xs px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300 transition-colors duration-200"
-                    >
-                      ➕ 添加
-                    </button>
-                  )}
-                </div>
-                
-                <SortableContext items={(bookmarksByCat[cat.id] || []).map((b) => b.id)} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 3xl:grid-cols-8 gap-3">
-                    {(bookmarksByCat[cat.id] || []).map((b, cardIndex) => (
-                      <div 
-                        key={b.id}
-                        className="animate-fade-in-up"
-                        style={{ animationDelay: `${(index * 0.1) + (cardIndex * 0.05)}s` }}
-                      >
-                        <SortableCard 
-                          bookmark={b} 
-                          onEdit={() => openEditBookmark(b)} 
-                          onDelete={() => openDeleteBookmark(b)} 
-                          dragging={activeId === b.id}
-                          showActions={authed && manage}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </SortableContext>
-              </section>
-            ))}
+            <SortableContext items={categories.map((c) => c.id)} strategy={rectSortingStrategy}>
+              {categories.map((cat, index) => (
+                <SortableCategory
+                  key={cat.id}
+                  category={cat}
+                  bookmarks={bookmarksByCat[cat.id] || []}
+                  onEdit={() => openEditCategory(cat)}
+                  onDelete={() => openDeleteCategory(cat)}
+                  onAddBookmark={() => openAddBookmark(cat.id)}
+                  dragging={activeId === cat.id}
+                  showActions={authed && manage}
+                  activeSection={activeSection}
+                  bookmarksByCat={bookmarksByCat}
+                  onEditBookmark={openEditBookmark}
+                  onDeleteBookmark={openDeleteBookmark}
+                />
+              ))}
+            </SortableContext>
             <DragOverlay />
           </DndContext>
         )}
@@ -928,6 +1115,33 @@ export default function App() {
               className="btn-success flex items-center justify-center min-h-[40px]"
             >
               添加
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 编辑分类模态 */}
+      <Modal isOpen={modals.editCategory} onClose={() => setModals(prev => ({ ...prev, editCategory: false }))} title="编辑分类">
+        <div className="space-y-4">
+          <InputForm
+            title="分类名称"
+            placeholder="请输入分类名称"
+            value={formData.categoryName}
+            onChange={(value) => setFormData(prev => ({ ...prev, categoryName: value }))}
+            required
+          />
+          <div className="flex gap-3 justify-end items-center">
+            <button
+              onClick={() => setModals(prev => ({ ...prev, editCategory: false }))}
+              className="btn-secondary flex items-center justify-center min-h-[40px]"
+            >
+              取消
+            </button>
+            <button
+              onClick={editCategory}
+              className="btn-primary flex items-center justify-center min-h-[40px]"
+            >
+              保存
             </button>
           </div>
         </div>
@@ -1048,6 +1262,146 @@ export default function App() {
               className="btn-primary flex items-center justify-center min-h-[40px]"
             >
               保存
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 备份管理模态 */}
+      <Modal isOpen={modals.backupManager} onClose={() => setModals(prev => ({ ...prev, backupManager: false }))} title="备份管理">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">备份列表</h4>
+            <button
+              onClick={loadBackups}
+              disabled={loadingBackups}
+              className="text-xs px-3 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 transition-colors duration-200 disabled:opacity-50"
+            >
+              {loadingBackups ? '加载中...' : '🔄 刷新'}
+            </button>
+          </div>
+          
+          {loadingBackups ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">加载中...</span>
+            </div>
+          ) : backups.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">📦</div>
+              <p className="text-gray-500 dark:text-gray-400">暂无备份</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">系统会自动创建备份</p>
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {backups.map((backup, index) => (
+                <div
+                  key={backup.key}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        {index + 1}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(backup.timestamp).toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {backup.key}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openRestoreBackup(backup)}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300 transition-colors duration-200"
+                  >
+                    🔄 恢复
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex gap-3 justify-end items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setModals(prev => ({ ...prev, backupManager: false }))}
+              className="btn-secondary flex items-center justify-center min-h-[40px]"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 配置说明模态 */}
+      <Modal isOpen={modals.configHelp} onClose={() => setModals(prev => ({ ...prev, configHelp: false }))} title="配置说明">
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              🕒 定时清理配置
+            </h4>
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                系统会自动保留最近 10 次备份，但您也可以配置定时清理任务：
+              </p>
+              <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
+                <li>在 Cloudflare Pages 项目中，进入 <strong>Functions</strong> → <strong>Settings</strong></li>
+                <li>找到 <strong>Triggers</strong> → <strong>Cron triggers</strong></li>
+                <li>添加新的 Cron 触发器：<code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">0 3 * * *</code></li>
+                <li>这将每天凌晨 3 点自动清理旧备份</li>
+              </ol>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              🔐 Cloudflare Access 集成
+            </h4>
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                如果您希望使用 Cloudflare Access 进行统一身份验证：
+              </p>
+              <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
+                <li>在 Cloudflare 控制台中，进入 <strong>Access</strong> → <strong>Applications</strong></li>
+                <li>创建新应用，选择 <strong>Self-hosted</strong></li>
+                <li>设置域名和路径（如：<code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">your-domain.com/*</code>）</li>
+                <li>配置访问策略，添加允许的用户或组</li>
+                <li>系统会自动检测 Access JWT 并跳过自建登录</li>
+              </ol>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              📝 环境变量说明
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <div className="space-y-3">
+                <div>
+                  <code className="text-sm font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">JWT_SECRET</code>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">JWT 签名密钥，建议使用强随机字符串</p>
+                </div>
+                <div>
+                  <code className="text-sm font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">ADMIN_PASSWORD</code>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">管理密码，默认为 "admin"</p>
+                </div>
+                <div>
+                  <code className="text-sm font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">JWT_EXPIRES_IN</code>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">JWT 过期时间（秒），默认 900 秒（15分钟）</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 justify-end items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setModals(prev => ({ ...prev, configHelp: false }))}
+              className="btn-secondary flex items-center justify-center min-h-[40px]"
+            >
+              关闭
             </button>
           </div>
         </div>
