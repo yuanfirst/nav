@@ -923,6 +923,28 @@ export default function App() {
                   >
                     {manage ? '✅ 管理' : '⚙️ 管理'}
                   </button>
+                  {manage && (
+                    <div className="hidden md:flex items-center gap-2">
+                      <button 
+                        onClick={openAddCategory} 
+                        className="btn-primary text-xs flex items-center gap-1 px-3 py-2"
+                      >
+                        ➕ 新增分类
+                      </button>
+                      <button 
+                        onClick={openBackupManager} 
+                        className="btn-secondary text-xs flex items-center gap-1 px-3 py-2"
+                      >
+                        💾 备份管理
+                      </button>
+                      <button 
+                        onClick={openConfigHelp} 
+                        className="btn-secondary text-xs flex items-center gap-1 px-3 py-2"
+                      >
+                        ⚙️ 配置说明
+                      </button>
+                    </div>
+                  )}
                   <button 
                     onClick={logout} 
                     className="btn-secondary text-sm"
