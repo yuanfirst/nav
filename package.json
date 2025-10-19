@@ -1,0 +1,25 @@
+{
+  "name": "workers-pages-bookmark-cards",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm -w web run dev",
+    "build": "npm -w web run build",
+    "preview": "npm -w web run preview",
+    "typecheck": "npm -w web run typecheck"
+  },
+  "dependencies": {
+    "hono": "^4.4.4",
+    "jose": "^5.2.4",
+    "zod": "^3.23.8",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241018.0",
+    "typescript": "^5.6.3"
+  }
+}

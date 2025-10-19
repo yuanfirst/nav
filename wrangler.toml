@@ -1,0 +1,16 @@
+name = "bookmark-cards"
+compatibility_date = "2024-10-01"
+
+# For local development with `wrangler pages dev`
+[site]
+bucket = "web/dist"
+
+[vars]
+# JWT expiration in seconds (15 minutes)
+JWT_EXPIRES_IN = "900"
+
+# Bind KV for bookmarks data
+[[kv_namespaces]]
+binding = "BOOKMARKS_KV"
+id = "xxxxxxxxxx"
+preview_id = "xxxxxxxxx"

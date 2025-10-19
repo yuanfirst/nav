@@ -1,0 +1,27 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+.out/
+.next/
+.cache/
+coverage/
+
+# CF/Workers
+.wrangler/
+
+# Editors/OS
+.vscode/
+.DS_Store
+
+# Env files
+.env
+.env.*
+
+# Framework specifics
+.svelte-kit/
+.vercel/
+.netlify/

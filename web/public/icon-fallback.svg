@@ -1,0 +1,19 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="96" cy="96" r="90" fill="#3B82F6" stroke="#1E40AF" stroke-width="4"/>
+  
+  <!-- 简化的导航图标 -->
+  <g transform="translate(48, 48)">
+    <!-- 指南针外圈 -->
+    <circle cx="48" cy="48" r="36" fill="none" stroke="white" stroke-width="3"/>
+    
+    <!-- 指南针指针 -->
+    <path d="M48 24 L60 48 L48 72 L36 48 Z" fill="white"/>
+    
+    <!-- 中心点 -->
+    <circle cx="48" cy="48" r="6" fill="white"/>
+    
+    <!-- N 标记 -->
+    <text x="48" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white" font-weight="bold">N</text>
+  </g>
+</svg>
