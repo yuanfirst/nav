@@ -923,28 +923,6 @@ export default function App() {
                   >
                     {manage ? '✅ 管理' : '⚙️ 管理'}
                   </button>
-                  {manage && (
-                    <div className="flex flex-wrap gap-2">
-                      <button 
-                        onClick={openAddCategory} 
-                        className="btn-primary text-xs sm:text-sm flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2"
-                      >
-                        ➕ <span className="hidden sm:inline">新增分类</span><span className="sm:hidden">分类</span>
-                      </button>
-                      <button 
-                        onClick={openBackupManager} 
-                        className="btn-secondary text-xs sm:text-sm flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2"
-                      >
-                        💾 <span className="hidden sm:inline">备份管理</span><span className="sm:hidden">备份</span>
-                      </button>
-                      <button 
-                        onClick={openConfigHelp} 
-                        className="btn-secondary text-xs sm:text-sm flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2"
-                      >
-                        ⚙️ <span className="hidden sm:inline">配置说明</span><span className="sm:hidden">配置</span>
-                      </button>
-                    </div>
-                  )}
                   <button 
                     onClick={logout} 
                     className="btn-secondary text-sm"
@@ -970,6 +948,32 @@ export default function App() {
               </button>
             </div>
           </div>
+          
+          {/* 移动端管理功能按钮 */}
+          {authed && manage && (
+            <div className="md:hidden mt-3">
+              <div className="flex gap-1.5 overflow-x-auto pb-2">
+                <button 
+                  onClick={openAddCategory} 
+                  className="btn-primary text-xs flex items-center gap-1 px-2.5 py-1.5 flex-shrink-0 rounded-md"
+                >
+                  ➕ 分类
+                </button>
+                <button 
+                  onClick={openBackupManager} 
+                  className="btn-secondary text-xs flex items-center gap-1 px-2.5 py-1.5 flex-shrink-0 rounded-md"
+                >
+                  💾 备份
+                </button>
+                <button 
+                  onClick={openConfigHelp} 
+                  className="btn-secondary text-xs flex items-center gap-1 px-2.5 py-1.5 flex-shrink-0 rounded-md"
+                >
+                  ⚙️ 配置
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* 移动端导航 */}
           <div className="md:hidden mt-3">
