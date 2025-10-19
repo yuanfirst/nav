@@ -1341,18 +1341,18 @@ export default function App() {
         <div className="space-y-4 sm:space-y-6">
           <div>
             <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-              🕒 定时清理配置
+              💾 备份管理说明
             </h4>
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg">
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                系统会自动保留最近 10 次备份，但您也可以配置定时清理任务：
+                系统已内置智能备份管理，无需额外配置：
               </p>
-              <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
-                <li>在 Cloudflare Pages 项目中，进入 <strong>Functions</strong> → <strong>Settings</strong></li>
-                <li>找到 <strong>Triggers</strong> → <strong>Cron triggers</strong></li>
-                <li>添加新的 Cron 触发器：<code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs sm:text-sm">0 3 * * *</code></li>
-                <li>这将每天凌晨 3 点自动清理旧备份</li>
-              </ol>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-disc list-inside">
+                <li><strong>自动备份</strong>：每次数据变更都会自动创建备份</li>
+                <li><strong>智能清理</strong>：系统自动保留最近 10 个备份，删除旧备份</li>
+                <li><strong>手动管理</strong>：通过"备份管理"界面查看和恢复任意备份</li>
+                <li><strong>零配置</strong>：无需设置定时任务，系统自动工作</li>
+              </ul>
             </div>
           </div>
 
@@ -1370,6 +1370,23 @@ export default function App() {
                 <li>设置域名和路径（如：<code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs sm:text-sm">your-domain.com/*</code>）</li>
                 <li>配置访问策略，添加允许的用户或组</li>
                 <li>系统会自动检测 Access JWT 并跳过自建登录</li>
+              </ol>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              🚀 快速部署配置
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-800 p-3 sm:p-4 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                部署到 Cloudflare Pages 的必需配置：
+              </p>
+              <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-decimal list-inside">
+                <li><strong>连接 GitHub 仓库</strong>：在 Pages 中连接您的 GitHub 仓库</li>
+                <li><strong>绑定 KV 存储</strong>：创建 KV 命名空间，绑定变量名 <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">BOOKMARKS_KV</code></li>
+                <li><strong>设置环境变量</strong>：在 Pages 项目设置中添加环境变量</li>
+                <li><strong>部署完成</strong>：系统自动构建和部署</li>
               </ol>
             </div>
           </div>
