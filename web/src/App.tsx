@@ -148,6 +148,14 @@ export type Bookmark = {
 }
 export type Dataset = { version: number; categories: Category[]; bookmarks: Bookmark[]; updatedAt: string }
 
+// 统一规范化 URL，缺少协议时自动补全为 https
+function normalizeUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || '').trim()
+  if (!trimmed) return ''
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
+  return `https://${trimmed}`
+}
+
 function getFaviconUrl(bookmark: Bookmark): string {
   // 如果用户自定义了图标，优先使用
   if (bookmark.iconUrl && bookmark.iconUrl.trim()) {
@@ -159,15 +167,8 @@ function getFaviconUrl(bookmark: Bookmark): string {
     if (!bookmark.url || typeof bookmark.url !== 'string' || bookmark.url.trim() === '') {
       return '/favicon.ico';
     }
-    
-    let urlString = bookmark.url.trim();
-    
-    // 自动添加协议前缀 - 解决用户输入不带协议的问题
-    if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
-      urlString = 'https://' + urlString;
-    }
-    
-    const url = new URL(urlString);
+
+    const url = new URL(normalizeUrl(bookmark.url));
     const hostname = url.hostname;
     
     // 验证 hostname 是否有效
@@ -388,7 +389,9 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
       return
     }
     // 跳转到书签URL
-    window.open(bookmark.url, '_blank', 'noopener,noreferrer')
+    const targetUrl = normalizeUrl(bookmark.url)
+    if (!targetUrl) return
+    window.open(targetUrl, '_blank', 'noopener,noreferrer')
   }
 
   // 处理 favicon 加载错误
