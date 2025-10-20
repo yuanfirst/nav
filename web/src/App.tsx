@@ -155,8 +155,8 @@ function getFaviconUrl(bookmark: Bookmark): string {
   
   try {
     const hostname = new URL(bookmark.url).hostname;
-    // 使用 DuckDuckGo 的 favicon 服务，对国内用户更友好
-    return `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+    // 使用国内可访问的 favicon 服务
+    return `https://www.faviconextractor.com/api/favicon/${hostname}`;
   } catch {
     // 如果 URL 解析失败，返回默认图标
     return '/favicon.ico';
