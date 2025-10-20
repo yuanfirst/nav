@@ -160,7 +160,14 @@ function getFaviconUrl(bookmark: Bookmark): string {
       return '/favicon.ico';
     }
     
-    const url = new URL(bookmark.url);
+    let urlString = bookmark.url.trim();
+    
+    // 自动添加协议前缀 - 解决用户输入不带协议的问题
+    if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+      urlString = 'https://' + urlString;
+    }
+    
+    const url = new URL(urlString);
     const hostname = url.hostname;
     
     // 验证 hostname 是否有效
@@ -534,22 +541,15 @@ export default function App() {
   const bookmarksByCat = useMemo(() => {
     const map: Record<string, Bookmark[]> = {}
     
-    // 过滤掉无效的书签数据
+    // 过滤掉无效的书签数据 - 只验证基本字段，不验证 URL 格式
     const validBookmarks = dataset?.bookmarks.filter((bookmark) => {
-      try {
-        // 验证书签数据是否有效
-        if (!bookmark.url || typeof bookmark.url !== 'string' || bookmark.url.trim() === '') {
-          console.warn('Invalid bookmark URL:', bookmark);
-          return false;
-        }
-        
-        // 验证 URL 格式
-        new URL(bookmark.url);
-        return true;
-      } catch (error) {
-        console.warn('Invalid bookmark data:', bookmark, error);
-        return false;
-      }
+      // 只验证基本字段，URL 格式验证交给 getFaviconUrl 处理
+      return bookmark.url && 
+             typeof bookmark.url === 'string' && 
+             bookmark.url.trim() !== '' &&
+             bookmark.title && 
+             typeof bookmark.title === 'string' && 
+             bookmark.title.trim() !== '';
     }) || [];
     
     validBookmarks.forEach((b) => {
