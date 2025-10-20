@@ -148,15 +148,15 @@ export type Bookmark = {
 }
 export type Dataset = { version: number; categories: Category[]; bookmarks: Bookmark[]; updatedAt: string }
 
-// 获取 favicon URL 的工具函数
 function getFaviconUrl(bookmark: Bookmark): string {
   // 如果用户自定义了图标，优先使用
-  if (bookmark.iconUrl) return bookmark.iconUrl;
+  if (bookmark.iconUrl && bookmark.iconUrl.trim()) {
+    return bookmark.iconUrl;
+  }
   
   try {
     const hostname = new URL(bookmark.url).hostname;
-    // 使用国内可访问的 favicon 服务
-    return `https://www.faviconextractor.com/api/favicon/${hostname}`;
+    return `https://www.faviconextractor.com/favicon/${hostname}`;
   } catch {
     // 如果 URL 解析失败，返回默认图标
     return '/favicon.ico';
@@ -345,10 +345,17 @@ function SortableCategory({ category, bookmarks, onEdit, onDelete, onAddBookmark
 function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = false }: { bookmark: Bookmark; onEdit: () => void; onDelete: () => void; dragging?: boolean; showActions?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bookmark.id })
   const [faviconError, setFaviconError] = useState(false)
+  const [currentFaviconUrl, setCurrentFaviconUrl] = useState<string>('')
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   } as React.CSSProperties
+
+  // 默认 SVG 图标
+  const defaultIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>' +
+    '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>' +
+    '</svg>'
 
   // 处理卡片点击跳转
   const handleCardClick = (e: React.MouseEvent) => {
@@ -366,8 +373,26 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
 
   // 处理 favicon 加载错误
   const handleFaviconError = () => {
-    setFaviconError(true)
+    if (!faviconError) {
+      // 创建默认 SVG 图标
+      const svgBlob = new Blob([defaultIconSVG], { type: 'image/svg+xml' })
+      const svgUrl = URL.createObjectURL(svgBlob)
+      setCurrentFaviconUrl(svgUrl)
+      setFaviconError(true)
+      
+      // 清理 URL 对象
+      setTimeout(() => {
+        URL.revokeObjectURL(svgUrl)
+      }, 1000)
+    }
   }
+
+  // 初始化 favicon URL
+  React.useEffect(() => {
+    if (!currentFaviconUrl) {
+      setCurrentFaviconUrl(getFaviconUrl(bookmark))
+    }
+  }, [bookmark, currentFaviconUrl])
 
   return (
     <div 
@@ -383,7 +408,7 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
     >
       <div className="relative flex-shrink-0">
         <img 
-          src={faviconError ? '/favicon.ico' : getFaviconUrl(bookmark)} 
+          src={currentFaviconUrl || getFaviconUrl(bookmark)} 
           alt="" 
           className="w-8 h-8 rounded group-hover:scale-105 transition-transform duration-200" 
           onError={handleFaviconError}
