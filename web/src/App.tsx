@@ -155,10 +155,23 @@ function getFaviconUrl(bookmark: Bookmark): string {
   }
   
   try {
-    const hostname = new URL(bookmark.url).hostname;
+    // 验证 URL 是否有效
+    if (!bookmark.url || typeof bookmark.url !== 'string' || bookmark.url.trim() === '') {
+      return '/favicon.ico';
+    }
+    
+    const url = new URL(bookmark.url);
+    const hostname = url.hostname;
+    
+    // 验证 hostname 是否有效
+    if (!hostname || hostname.trim() === '') {
+      return '/favicon.ico';
+    }
+    
     return `https://www.faviconextractor.com/favicon/${hostname}`;
-  } catch {
-    // 如果 URL 解析失败，返回默认图标
+  } catch (error) {
+    // URL 无效，返回默认图标
+    console.warn('Invalid bookmark URL:', bookmark.url, error);
     return '/favicon.ico';
   }
 }
@@ -520,7 +533,26 @@ export default function App() {
   const categories = useMemo(() => (dataset ? [...dataset.categories].sort((a, b) => a.order - b.order) : []), [dataset])
   const bookmarksByCat = useMemo(() => {
     const map: Record<string, Bookmark[]> = {}
-    dataset?.bookmarks.forEach((b) => {
+    
+    // 过滤掉无效的书签数据
+    const validBookmarks = dataset?.bookmarks.filter((bookmark) => {
+      try {
+        // 验证书签数据是否有效
+        if (!bookmark.url || typeof bookmark.url !== 'string' || bookmark.url.trim() === '') {
+          console.warn('Invalid bookmark URL:', bookmark);
+          return false;
+        }
+        
+        // 验证 URL 格式
+        new URL(bookmark.url);
+        return true;
+      } catch (error) {
+        console.warn('Invalid bookmark data:', bookmark, error);
+        return false;
+      }
+    }) || [];
+    
+    validBookmarks.forEach((b) => {
       map[b.categoryId] ||= []
       map[b.categoryId].push(b)
     })
