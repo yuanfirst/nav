@@ -273,20 +273,35 @@ function useDataset() {
     setLoading(true)
     try {
       const res = await fetch(`/api/bookmarks${all ? '?visibility=all' : ''}`)
-      if (res.status === 401) {
+      if (res.ok) {
+        const data = await res.json()
+        setDataset(data)
+        setAuthed(all)
+      } else if (res.status === 401) {
+        // 401错误，尝试获取公开书签
         setAuthed(false)
         const res2 = await fetch('/api/bookmarks')
         const data2 = await res2.json()
         setDataset(data2)
-        setLoading(false)
-        return
+      } else {
+        // 其他错误，尝试获取公开书签
+        setAuthed(false)
+        const res2 = await fetch('/api/bookmarks')
+        const data2 = await res2.json()
+        setDataset(data2)
       }
-      const data = await res.json()
-      setDataset(data)
-      setAuthed(all)
-      setLoading(false)
     } catch (error) {
       console.error('加载数据失败:', error)
+      // 网络错误，尝试获取公开书签
+      try {
+        const res = await fetch('/api/bookmarks')
+        const data = await res.json()
+        setDataset(data)
+        setAuthed(false)
+      } catch (error2) {
+        console.error('加载公开书签失败:', error2)
+      }
+    } finally {
       setLoading(false)
     }
   }
@@ -310,13 +325,30 @@ function useDataset() {
     const init = async () => {
       setLoading(true)
       try {
-        // 直接获取公开书签，避免权限问题
-        const res = await fetch('/api/bookmarks')
-        const data = await res.json()
-        setDataset(data)
-        setAuthed(false)
+        // 先尝试获取所有书签（包括私有的）来检查登录状态
+        const res = await fetch('/api/bookmarks?visibility=all')
+        if (res.ok) {
+          // 登录成功，获取所有数据
+          const data = await res.json()
+          setDataset(data)
+          setAuthed(true)
+        } else {
+          // 未登录或权限不足，获取公开书签
+          const res2 = await fetch('/api/bookmarks')
+          const data2 = await res2.json()
+          setDataset(data2)
+          setAuthed(false)
+        }
       } catch (error) {
-        console.error('加载数据失败:', error)
+        // 网络错误或其他问题，尝试获取公开书签
+        try {
+          const res = await fetch('/api/bookmarks')
+          const data = await res.json()
+          setDataset(data)
+          setAuthed(false)
+        } catch (error2) {
+          console.error('加载数据失败:', error2)
+        }
       } finally {
         setLoading(false)
       }
