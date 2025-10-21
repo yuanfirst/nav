@@ -4,6 +4,51 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@d
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'classnames'
 
+// 错误边界组件
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('应用错误:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="text-center p-8">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              应用出现错误
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              页面遇到了一个错误，请刷新页面重试
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 // 现代模态组件
 function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   useEffect(() => {
@@ -263,10 +308,18 @@ function useDataset() {
 
   useEffect(() => {
     const init = async () => {
-      // 先检查是否已登录
-      const isAuthed = await checkAuth()
-      // 然后加载数据
-      await load(isAuthed)
+      setLoading(true)
+      try {
+        // 直接获取公开书签，避免权限问题
+        const res = await fetch('/api/bookmarks')
+        const data = await res.json()
+        setDataset(data)
+        setAuthed(false)
+      } catch (error) {
+        console.error('加载数据失败:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     init()
   }, [])
@@ -459,7 +512,13 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400 truncate min-w-0">
-            {bookmark.description ? bookmark.description : new URL(bookmark.url).hostname}
+            {bookmark.description ? bookmark.description : (() => {
+              try {
+                return new URL(normalizeUrl(bookmark.url)).hostname;
+              } catch {
+                return bookmark.url; // 如果URL无效，显示原始URL
+              }
+            })()}
           </span>
           {showActions && (
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
@@ -489,7 +548,7 @@ function SortableCard({ bookmark, onEdit, onDelete, dragging, showActions = fals
   )
 }
 
-export default function App() {
+function App() {
   const { dark, setDark } = useDarkMode()
   const { loading, dataset, setDataset, authed, reload } = useDataset()
   const [manage, setManage] = useState(false)
@@ -1542,6 +1601,15 @@ export default function App() {
         type={confirmData.type}
       />
     </div>
+  )
+}
+
+// 用错误边界包装主应用
+export default function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   )
 }
 
