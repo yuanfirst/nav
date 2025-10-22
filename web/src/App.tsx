@@ -3,6 +3,9 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, T
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'classnames'
+import { useMetadataFetch } from './hooks/useMetadataFetch'
+import { ExportDialog } from './components/ExportDialog'
+import { ImportDialog } from './components/ImportDialog'
 
 // 错误边界组件
 class ErrorBoundary extends React.Component<
@@ -585,6 +588,7 @@ function App() {
   const { loading, dataset, setDataset, authed, reload } = useDataset()
   const [manage, setManage] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const { fetchMetadata, loading: metadataLoading } = useMetadataFetch()
   
   // 模态状态管理
   const [modals, setModals] = useState({
@@ -597,7 +601,9 @@ function App() {
     deleteCategory: false,
     backupManager: false,
     configHelp: false,
-    confirm: false
+    confirm: false,
+    export: false,
+    import: false
   })
   
   // 表单数据
@@ -791,6 +797,25 @@ function App() {
       reload(true)
     } catch (error) {
       showConfirm('编辑失败', `编辑分类失败: ${error}`, 'warning')
+    }
+  }
+
+  // 自动获取书签元数据
+  const autoFetchMetadata = async () => {
+    if (!formData.bookmarkUrl.trim()) {
+      showConfirm('提示', '请先输入网址', 'info')
+      return
+    }
+
+    const metadata = await fetchMetadata(formData.bookmarkUrl)
+    if (metadata) {
+      setFormData(prev => ({
+        ...prev,
+        bookmarkTitle: metadata.title || prev.bookmarkTitle,
+        bookmarkDescription: metadata.description || prev.bookmarkDescription,
+        bookmarkIconUrl: metadata.iconUrl || prev.bookmarkIconUrl,
+      }))
+      showConfirm('获取成功', '已自动填充书签信息', 'info')
     }
   }
 
@@ -1042,6 +1067,73 @@ function App() {
     setModals(prev => ({ ...prev, confirm: true }))
   }
 
+  // 导出功能
+  const handleExport = async (format: 'json' | 'html') => {
+    try {
+      const response = await fetch(`/api/export?format=${format}`)
+      
+      if (!response.ok) {
+        throw new Error('导出失败')
+      }
+      
+      // 获取文件名
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const fileName = contentDisposition 
+        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') 
+        : `nav-bookmarks-${new Date().toISOString().split('T')[0]}.${format}`
+      
+      // 下载文件
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      showConfirm('导出成功', `书签已导出为 ${format.toUpperCase()} 格式`, 'info')
+    } catch (error) {
+      showConfirm('导出失败', `导出书签失败: ${error}`, 'warning')
+    }
+  }
+
+  // 导入功能
+  const handleImport = async (file: File, options: { merge: boolean; makePrivate: boolean }) => {
+    try {
+      const fileContent = await file.text()
+      const format = file.name.toLowerCase().endsWith('.json') ? 'json' : 'html'
+      
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          format,
+          data: fileContent,
+          options
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || '导入失败')
+      }
+
+      const result = await response.json()
+      showConfirm(
+        '导入成功', 
+        `成功导入 ${result.imported.categories} 个分类和 ${result.imported.bookmarks} 个书签。当前共有 ${result.total.categories} 个分类和 ${result.total.bookmarks} 个书签。`, 
+        'info'
+      )
+      
+      // 重新加载数据
+      reload(true)
+    } catch (error) {
+      showConfirm('导入失败', `导入书签失败: ${error}`, 'warning')
+    }
+  }
+
   return (
     <div className="min-h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <header className="sticky top-0 z-50 glass border-b border-gray-200 dark:border-gray-700 shadow-lg">
@@ -1111,6 +1203,18 @@ function App() {
                         💾 备份管理
                       </button>
                       <button 
+                        onClick={() => setModals(prev => ({ ...prev, export: true }))}
+                        className="btn-secondary text-xs flex items-center gap-1 px-3 py-2"
+                      >
+                        📥 导出书签
+                      </button>
+                      <button 
+                        onClick={() => setModals(prev => ({ ...prev, import: true }))}
+                        className="btn-secondary text-xs flex items-center gap-1 px-3 py-2"
+                      >
+                        📤 导入书签
+                      </button>
+                      <button 
                         onClick={openConfigHelp} 
                         className="btn-secondary text-xs flex items-center gap-1 px-3 py-2"
                       >
@@ -1159,6 +1263,18 @@ function App() {
                   className="btn-secondary text-xs flex items-center gap-1 px-2.5 py-1.5 flex-shrink-0 rounded-md"
                 >
                   💾 备份
+                </button>
+                <button 
+                  onClick={() => setModals(prev => ({ ...prev, export: true }))}
+                  className="btn-secondary text-xs flex items-center gap-1 px-2.5 py-1.5 flex-shrink-0 rounded-md"
+                >
+                  📥 导出
+                </button>
+                <button 
+                  onClick={() => setModals(prev => ({ ...prev, import: true }))}
+                  className="btn-secondary text-xs flex items-center gap-1 px-2.5 py-1.5 flex-shrink-0 rounded-md"
+                >
+                  📤 导入
                 </button>
                 <button 
                   onClick={openConfigHelp} 
@@ -1356,14 +1472,33 @@ function App() {
             onChange={(value) => setFormData(prev => ({ ...prev, bookmarkTitle: value }))}
             required
           />
-          <InputForm
-            title="网址"
-            placeholder="https://example.com"
-            value={formData.bookmarkUrl}
-            onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
-            type="url"
-            required
-          />
+          <div className="space-y-2">
+            <InputForm
+              title="网址"
+              placeholder="https://example.com"
+              value={formData.bookmarkUrl}
+              onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
+              type="url"
+              required
+            />
+            <button
+              onClick={autoFetchMetadata}
+              disabled={metadataLoading || !formData.bookmarkUrl.trim()}
+              className="w-full text-xs px-3 py-2 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {metadataLoading ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span>获取中...</span>
+                </>
+              ) : (
+                <>
+                  <span>🔍</span>
+                  <span>自动获取标题和描述</span>
+                </>
+              )}
+            </button>
+          </div>
           <InputForm
             title="描述"
             placeholder="请输入书签描述（可选）"
@@ -1416,14 +1551,33 @@ function App() {
             onChange={(value) => setFormData(prev => ({ ...prev, bookmarkTitle: value }))}
             required
           />
-          <InputForm
-            title="网址"
-            placeholder="https://example.com"
-            value={formData.bookmarkUrl}
-            onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
-            type="url"
-            required
-          />
+          <div className="space-y-2">
+            <InputForm
+              title="网址"
+              placeholder="https://example.com"
+              value={formData.bookmarkUrl}
+              onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
+              type="url"
+              required
+            />
+            <button
+              onClick={autoFetchMetadata}
+              disabled={metadataLoading || !formData.bookmarkUrl.trim()}
+              className="w-full text-xs px-3 py-2 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {metadataLoading ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span>获取中...</span>
+                </>
+              ) : (
+                <>
+                  <span>🔍</span>
+                  <span>自动获取标题和描述</span>
+                </>
+              )}
+            </button>
+          </div>
           <InputForm
             title="描述"
             placeholder="请输入书签描述（可选）"
@@ -1631,6 +1785,20 @@ function App() {
         title={confirmData.title}
         message={confirmData.message}
         type={confirmData.type}
+      />
+
+      {/* 导出对话框 */}
+      <ExportDialog
+        isOpen={modals.export}
+        onClose={() => setModals(prev => ({ ...prev, export: false }))}
+        onExport={handleExport}
+      />
+
+      {/* 导入对话框 */}
+      <ImportDialog
+        isOpen={modals.import}
+        onClose={() => setModals(prev => ({ ...prev, import: false }))}
+        onImport={handleImport}
       />
     </div>
   )

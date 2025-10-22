@@ -3,6 +3,9 @@ import { handle } from 'hono/cloudflare-pages'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { jwtVerify, SignJWT } from 'jose'
 import { nanoid } from 'nanoid'
+import { fetchMetadata } from '../utils/metadata'
+import { generateJsonExport, generateHtmlExport, generateFileName, type ExportData } from '../utils/exportGenerator'
+import { parseHtmlBookmarks, validateImportData, cleanImportData } from '../utils/bookmarkParser'
 
 // Types (lightweight to avoid extra deps)
 type Category = {
@@ -33,7 +36,7 @@ type Dataset = {
 }
 
 type Bindings = {
-  BOOKMARKS_KV: KVNamespace
+  BOOKMARKS_KV: any
   JWT_SECRET?: string
   ADMIN_PASSWORD?: string
   JWT_EXPIRES_IN?: string
@@ -131,6 +134,183 @@ async function requireAuth(c: any, next: any) {
 }
 
 app.get('/api/health', (c) => c.json({ ok: true }))
+
+// 获取 URL 元数据（需要认证）
+app.get('/api/metadata', requireAuth, async (c) => {
+  const url = c.req.query('url')
+  if (!url) {
+    return c.json({ error: 'URL parameter is required' }, 400)
+  }
+
+  try {
+    // 验证 URL 格式
+    new URL(url)
+    const metadata = await fetchMetadata(url)
+    return c.json(metadata)
+  } catch (error) {
+    return c.json({ error: 'Invalid URL or failed to fetch metadata' }, 400)
+  }
+})
+
+// 导出书签（需要认证）
+app.get('/api/export', requireAuth, async (c) => {
+  const format = c.req.query('format') || 'json'
+  
+  if (format !== 'json' && format !== 'html') {
+    return c.json({ error: 'Invalid format. Must be json or html' }, 400)
+  }
+
+  try {
+    // 获取所有数据
+    const categoriesData = await c.env.BOOKMARKS_KV.get('categories')
+    const bookmarksData = await c.env.BOOKMARKS_KV.get('bookmarks')
+    
+    const categories = categoriesData ? JSON.parse(categoriesData) : []
+    const bookmarks = bookmarksData ? JSON.parse(bookmarksData) : []
+    
+    const exportData: ExportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      categories,
+      bookmarks
+    }
+    
+    let content: string
+    let mimeType: string
+    
+    if (format === 'json') {
+      content = generateJsonExport(exportData)
+      mimeType = 'application/json'
+    } else {
+      content = generateHtmlExport(exportData)
+      mimeType = 'text/html'
+    }
+    
+    const fileName = generateFileName(format)
+    
+    return new Response(content, {
+      headers: {
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Cache-Control': 'no-cache'
+      }
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to export bookmarks' }, 500)
+  }
+})
+
+// 导入书签（需要认证）
+app.post('/api/import', requireAuth, async (c) => {
+  try {
+    const body = await c.req.json()
+    const { format, data, options = {} } = body
+
+    if (!format || !data) {
+      return c.json({ error: 'Missing format or data' }, 400)
+    }
+
+    if (format !== 'json' && format !== 'html') {
+      return c.json({ error: 'Invalid format. Must be json or html' }, 400)
+    }
+
+    let importData: any
+
+    if (format === 'html') {
+      // 解析 HTML 书签文件
+      const parsed = parseHtmlBookmarks(data)
+      
+      // 转换为系统格式
+      importData = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        categories: parsed.categories.map((cat, index) => ({
+          id: `imported_${Date.now()}_${index}`,
+          name: cat.name,
+          order: index
+        })),
+        bookmarks: parsed.categories.flatMap((cat, catIndex) =>
+          cat.bookmarks.map((bookmark, bookmarkIndex) => ({
+            id: `imported_${Date.now()}_${catIndex}_${bookmarkIndex}`,
+            title: bookmark.title,
+            url: bookmark.url,
+            description: bookmark.description || '',
+            iconUrl: bookmark.icon || '',
+            isPrivate: options.makePrivate || false,
+            categoryId: `imported_${Date.now()}_${catIndex}`,
+            order: bookmarkIndex
+          }))
+        )
+      }
+    } else {
+      // JSON 格式
+      importData = data
+    }
+
+    // 验证数据
+    const validation = validateImportData(importData)
+    if (!validation.valid) {
+      return c.json({ error: validation.error }, 400)
+    }
+
+    // 清理数据
+    const cleanedData = cleanImportData(importData, {
+      merge: options.merge !== false, // 默认合并
+      makePrivate: options.makePrivate || false
+    })
+
+    // 获取现有数据
+    const existingCategoriesData = await c.env.BOOKMARKS_KV.get('categories')
+    const existingBookmarksData = await c.env.BOOKMARKS_KV.get('bookmarks')
+    
+    const existingCategories = existingCategoriesData ? JSON.parse(existingCategoriesData) : []
+    const existingBookmarks = existingBookmarksData ? JSON.parse(existingBookmarksData) : []
+
+    let finalCategories = [...existingCategories]
+    let finalBookmarks = [...existingBookmarks]
+
+    if (options.merge !== false) {
+      // 合并模式
+      finalCategories = [...existingCategories, ...cleanedData.categories]
+      finalBookmarks = [...existingBookmarks, ...cleanedData.bookmarks]
+    } else {
+      // 覆盖模式
+      finalCategories = cleanedData.categories
+      finalBookmarks = cleanedData.bookmarks
+    }
+
+    // 重新分配 order
+    finalCategories = finalCategories.map((cat: any, index: number) => ({
+      ...cat,
+      order: index
+    }))
+
+    finalBookmarks = finalBookmarks.map((bookmark: any, index: number) => ({
+      ...bookmark,
+      order: index
+    }))
+
+    // 保存到 KV
+    await c.env.BOOKMARKS_KV.put('categories', JSON.stringify(finalCategories))
+    await c.env.BOOKMARKS_KV.put('bookmarks', JSON.stringify(finalBookmarks))
+
+    return c.json({
+      success: true,
+      imported: {
+        categories: cleanedData.categories.length,
+        bookmarks: cleanedData.bookmarks.length
+      },
+      total: {
+        categories: finalCategories.length,
+        bookmarks: finalBookmarks.length
+      }
+    })
+
+  } catch (error) {
+    console.error('Import error:', error)
+    return c.json({ error: 'Failed to import bookmarks' }, 500)
+  }
+})
 
 app.post('/api/login', async (c) => {
   const body = await c.req.json().catch(() => ({}))
