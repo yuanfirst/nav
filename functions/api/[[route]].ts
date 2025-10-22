@@ -71,11 +71,7 @@ async function getCurrent(c: any): Promise<Dataset> {
   const seed: Dataset = {
     version: 1,
     updatedAt: now,
-    categories: [
-      { id: nanoid(), name: '默认', order: 0 },
-      { id: nanoid(), name: '工作', order: 1 },
-      { id: nanoid(), name: '学习', order: 2 }
-    ],
+    categories: [],
     bookmarks: []
   }
   await c.env.BOOKMARKS_KV.put('bookmarks:current', JSON.stringify(seed))

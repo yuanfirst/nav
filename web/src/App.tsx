@@ -4,6 +4,7 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@d
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'classnames'
 import { useMetadataFetch } from './hooks/useMetadataFetch'
+import { EmptyState } from './components/EmptyState'
 import { ExportDialog } from './components/ExportDialog'
 import { ImportDialog } from './components/ImportDialog'
 
@@ -636,6 +637,18 @@ function App() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor)
   )
+
+  // 监听空状态组件的登录事件
+  useEffect(() => {
+    const handleOpenLoginModal = () => {
+      setModals(prev => ({ ...prev, login: true }))
+    }
+
+    window.addEventListener('openLoginModal', handleOpenLoginModal)
+    return () => {
+      window.removeEventListener('openLoginModal', handleOpenLoginModal)
+    }
+  }, [])
 
   const categories = useMemo(() => (dataset ? [...dataset.categories].sort((a, b) => a.order - b.order) : []), [dataset])
   const bookmarksByCat = useMemo(() => {
@@ -1320,27 +1333,39 @@ function App() {
         )}
         
         {!loading && dataset && (
-          <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            <SortableContext items={categories.map((c) => c.id)} strategy={rectSortingStrategy}>
-              {categories.map((cat, index) => (
-                <SortableCategory
-                  key={cat.id}
-                  category={cat}
-                  bookmarks={bookmarksByCat[cat.id] || []}
-                  onEdit={() => openEditCategory(cat)}
-                  onDelete={() => openDeleteCategory(cat)}
-                  onAddBookmark={() => openAddBookmark(cat.id)}
-                  dragging={activeId === cat.id}
-                  showActions={authed && manage}
-                  activeSection={activeSection}
-                  bookmarksByCat={bookmarksByCat}
-                  onEditBookmark={openEditBookmark}
-                  onDeleteBookmark={openDeleteBookmark}
-                />
-              ))}
-            </SortableContext>
-            <DragOverlay />
-          </DndContext>
+          <>
+            {/* 检查是否为空状态 */}
+            {categories.length === 0 ? (
+              <EmptyState
+                onAddCategory={() => setModals(prev => ({ ...prev, addCategory: true }))}
+                onAddBookmark={() => setModals(prev => ({ ...prev, addBookmark: true }))}
+                onImportBookmarks={() => setModals(prev => ({ ...prev, import: true }))}
+                authed={authed}
+              />
+            ) : (
+              <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                <SortableContext items={categories.map((c) => c.id)} strategy={rectSortingStrategy}>
+                  {categories.map((cat, index) => (
+                    <SortableCategory
+                      key={cat.id}
+                      category={cat}
+                      bookmarks={bookmarksByCat[cat.id] || []}
+                      onEdit={() => openEditCategory(cat)}
+                      onDelete={() => openDeleteCategory(cat)}
+                      onAddBookmark={() => openAddBookmark(cat.id)}
+                      dragging={activeId === cat.id}
+                      showActions={authed && manage}
+                      activeSection={activeSection}
+                      bookmarksByCat={bookmarksByCat}
+                      onEditBookmark={openEditBookmark}
+                      onDeleteBookmark={openDeleteBookmark}
+                    />
+                  ))}
+                </SortableContext>
+                <DragOverlay />
+              </DndContext>
+            )}
+          </>
         )}
 
       </main>
@@ -1498,6 +1523,9 @@ function App() {
                 </>
               )}
             </button>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              注意：有些网站反爬虫机制可能无法自动获取，请手动配置
+            </p>
           </div>
           <InputForm
             title="描述"
@@ -1577,6 +1605,9 @@ function App() {
                 </>
               )}
             </button>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              注意：有些网站反爬虫机制可能无法自动获取，请手动配置
+            </p>
           </div>
           <InputForm
             title="描述"
