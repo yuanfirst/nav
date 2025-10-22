@@ -268,19 +268,15 @@ app.post('/api/import', requireAuth, async (c) => {
     })
 
     // 获取现有数据
-    const existingCategoriesData = await c.env.BOOKMARKS_KV.get('categories')
-    const existingBookmarksData = await c.env.BOOKMARKS_KV.get('bookmarks')
-    
-    const existingCategories = existingCategoriesData ? JSON.parse(existingCategoriesData) : []
-    const existingBookmarks = existingBookmarksData ? JSON.parse(existingBookmarksData) : []
+    const currentData = await getCurrent(c)
 
-    let finalCategories = [...existingCategories]
-    let finalBookmarks = [...existingBookmarks]
+    let finalCategories = [...currentData.categories]
+    let finalBookmarks = [...currentData.bookmarks]
 
     if (options.merge !== false) {
       // 合并模式
-      finalCategories = [...existingCategories, ...cleanedData.categories]
-      finalBookmarks = [...existingBookmarks, ...cleanedData.bookmarks]
+      finalCategories = [...currentData.categories, ...cleanedData.categories]
+      finalBookmarks = [...currentData.bookmarks, ...cleanedData.bookmarks]
     } else {
       // 覆盖模式
       finalCategories = cleanedData.categories
@@ -298,9 +294,15 @@ app.post('/api/import', requireAuth, async (c) => {
       order: index
     }))
 
-    // 保存到 KV
-    await c.env.BOOKMARKS_KV.put('categories', JSON.stringify(finalCategories))
-    await c.env.BOOKMARKS_KV.put('bookmarks', JSON.stringify(finalBookmarks))
+    // 更新数据集
+    const updatedData: Dataset = {
+      ...currentData,
+      categories: finalCategories,
+      bookmarks: finalBookmarks
+    }
+
+    // 使用 saveCurrent 保存到正确的位置
+    const saved = await saveCurrent(c, updatedData)
 
     return c.json({
       success: true,
