@@ -25,3 +25,7 @@ coverage/
 .svelte-kit/
 .vercel/
 .netlify/
+
+# test files
+test-bookmarks.html
+test-bookmarks.json

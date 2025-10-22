@@ -220,31 +220,39 @@ app.post('/api/import', requireAuth, async (c) => {
       // 解析 HTML 书签文件
       const parsed = parseHtmlBookmarks(data)
       
+      // 生成一致的 timestamp 用于 ID 生成
+      const timestamp = Date.now()
+      
+      // 创建分类 ID 映射
+      const categoryIds = parsed.categories.map((cat, index) => 
+        `imported_${timestamp}_${index}`
+      )
+      
       // 转换为系统格式
       importData = {
         version: 1,
         exportedAt: new Date().toISOString(),
         categories: parsed.categories.map((cat, index) => ({
-          id: `imported_${Date.now()}_${index}`,
+          id: categoryIds[index],
           name: cat.name,
           order: index
         })),
         bookmarks: parsed.categories.flatMap((cat, catIndex) =>
           cat.bookmarks.map((bookmark, bookmarkIndex) => ({
-            id: `imported_${Date.now()}_${catIndex}_${bookmarkIndex}`,
+            id: `imported_${timestamp}_${catIndex}_${bookmarkIndex}`,
             title: bookmark.title,
             url: bookmark.url,
             description: bookmark.description || '',
             iconUrl: bookmark.icon || '',
             isPrivate: options.makePrivate || false,
-            categoryId: `imported_${Date.now()}_${catIndex}`,
+            categoryId: categoryIds[catIndex],  // 使用映射的 ID
             order: bookmarkIndex
           }))
         )
       }
     } else {
-      // JSON 格式
-      importData = data
+      // JSON 格式 - 需要解析字符串
+      importData = typeof data === 'string' ? JSON.parse(data) : data
     }
 
     // 验证数据

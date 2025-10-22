@@ -212,14 +212,22 @@ export function cleanImportData(data: any, options: {
 
   // 如果选择合并模式，重新生成 ID 避免冲突
   if (options.merge) {
-    cleaned.categories = cleaned.categories.map((cat: any) => ({
-      ...cat,
-      id: `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    }))
+    // 创建旧 ID 到新 ID 的映射
+    const categoryIdMap = new Map<string, string>()
+    
+    cleaned.categories = cleaned.categories.map((cat: any) => {
+      const newId = `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      categoryIdMap.set(cat.id, newId)
+      return {
+        ...cat,
+        id: newId
+      }
+    })
 
     cleaned.bookmarks = cleaned.bookmarks.map((bookmark: any) => ({
       ...bookmark,
       id: `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      categoryId: categoryIdMap.get(bookmark.categoryId) || bookmark.categoryId,  // 更新 categoryId
       isPrivate: options.makePrivate || bookmark.isPrivate || false
     }))
   }

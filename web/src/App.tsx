@@ -804,8 +804,8 @@ function App() {
   const autoFetchMetadata = async () => {
     if (!formData.bookmarkUrl.trim()) {
       showConfirm('提示', '请先输入网址', 'info')
-      return
-    }
+        return
+      }
 
     const metadata = await fetchMetadata(formData.bookmarkUrl)
     if (metadata) {
@@ -1473,14 +1473,14 @@ function App() {
             required
           />
           <div className="space-y-2">
-            <InputForm
-              title="网址"
-              placeholder="https://example.com"
-              value={formData.bookmarkUrl}
-              onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
-              type="url"
-              required
-            />
+          <InputForm
+            title="网址"
+            placeholder="https://example.com"
+            value={formData.bookmarkUrl}
+            onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
+            type="url"
+            required
+          />
             <button
               onClick={autoFetchMetadata}
               disabled={metadataLoading || !formData.bookmarkUrl.trim()}
@@ -1552,14 +1552,14 @@ function App() {
             required
           />
           <div className="space-y-2">
-            <InputForm
-              title="网址"
-              placeholder="https://example.com"
-              value={formData.bookmarkUrl}
-              onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
-              type="url"
-              required
-            />
+          <InputForm
+            title="网址"
+            placeholder="https://example.com"
+            value={formData.bookmarkUrl}
+            onChange={(value) => setFormData(prev => ({ ...prev, bookmarkUrl: value }))}
+            type="url"
+            required
+          />
             <button
               onClick={autoFetchMetadata}
               disabled={metadataLoading || !formData.bookmarkUrl.trim()}
