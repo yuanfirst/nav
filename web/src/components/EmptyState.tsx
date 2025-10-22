@@ -5,9 +5,10 @@ interface EmptyStateProps {
   onAddBookmark: () => void
   onImportBookmarks: () => void
   authed: boolean
+  hasCategories: boolean
 }
 
-export function EmptyState({ onAddCategory, onAddBookmark, onImportBookmarks, authed }: EmptyStateProps) {
+export function EmptyState({ onAddCategory, onAddBookmark, onImportBookmarks, authed, hasCategories }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-4">
       <div className="text-center max-w-md">
@@ -25,51 +26,57 @@ export function EmptyState({ onAddCategory, onAddBookmark, onImportBookmarks, au
           欢迎使用书签管理系统
         </h2>
         <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-          开始整理您的书签吧！您可以创建分类、添加书签，或者导入现有的书签文件。
+          {authed 
+            ? '开始整理您的书签吧！您可以创建分类、添加书签，或者导入现有的书签文件。'
+            : '欢迎使用书签管理系统！请先登录以开始管理您的书签。'
+          }
         </p>
 
         {/* 快捷操作按钮 */}
         <div className="space-y-4">
-          {/* 创建分类 */}
-          <button
-            onClick={onAddCategory}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>创建第一个分类</span>
-          </button>
+          {/* 如果已登录，显示管理功能 */}
+          {authed ? (
+            <>
+              {/* 导入书签 - 只有登录用户可以使用 */}
+              <button
+                onClick={onImportBookmarks}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                <span>导入现有书签</span>
+              </button>
 
-          {/* 导入书签 */}
-          <button
-            onClick={onImportBookmarks}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 font-medium"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-            </svg>
-            <span>导入现有书签</span>
-          </button>
+              {/* 创建分类 - 始终显示 */}
+              <button
+                onClick={onAddCategory}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>创建第一个分类</span>
+              </button>
 
-          {/* 如果已登录，显示添加书签按钮 */}
-          {authed && (
-            <button
-              onClick={onAddBookmark}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>添加第一个书签</span>
-            </button>
-          )}
-
-          {/* 如果未登录，显示登录提示 */}
-          {!authed && (
+              {/* 添加书签 - 只有在有分类时才显示 */}
+              {hasCategories && (
+                <button
+                  onClick={onAddBookmark}
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>添加第一个书签</span>
+                </button>
+              )}
+            </>
+          ) : (
+            /* 如果未登录，显示登录提示 */
             <div className="text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                需要登录才能添加书签
+                需要登录才能使用书签管理功能
               </p>
               <button
                 onClick={() => {

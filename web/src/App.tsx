@@ -1341,6 +1341,7 @@ function App() {
                 onAddBookmark={() => setModals(prev => ({ ...prev, addBookmark: true }))}
                 onImportBookmarks={() => setModals(prev => ({ ...prev, import: true }))}
                 authed={authed}
+                hasCategories={categories.length > 0}
               />
             ) : (
               <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
