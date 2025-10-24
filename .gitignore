@@ -1,31 +1,40 @@
-# Node
+# Dependencies
 node_modules/
-**/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Build outputs
+# Build output
 dist/
-build/
-.out/
-.next/
-.cache/
-coverage/
+.output/
 
-# CF/Workers
-.wrangler/
-
-# Editors/OS
-.vscode/
-.DS_Store
-
-# Env files
+# Environment
 .env
-.env.*
+.dev.vars
 
-# Framework specifics
-.svelte-kit/
-.vercel/
-.netlify/
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# test files
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Wrangler
+.wrangler/
+wrangler.toml.backup
+
+# workers
+workers.js
+
+# Test files
 test-bookmarks.html
 test-bookmarks.json
+bookmarks_2025_10_22.html
+bookmarks_2025_10_22.json
+优化清单.md

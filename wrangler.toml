@@ -1,16 +1,16 @@
-name = "bookmark-cards"
-compatibility_date = "2024-10-01"
+name = "bookmark-manager"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
 
-# For local development with `wrangler pages dev`
-[site]
-bucket = "web/dist"
+[[d1_databases]]
+binding = "DB"
+database_name = "bookmark-db"
+database_id = "d64f5c10-a935-4ac9-80af-8dfa2dd218e6"
 
-[vars]
-# JWT expiration in seconds (15 minutes)
-JWT_EXPIRES_IN = "900"
+# 注意：敏感的环境变量（如密码、密钥）应该在 Cloudflare Pages Dashboard 中设置
+# 而不是写在这个配置文件中！
+# 前往 Pages 项目 > Settings > Environment variables 手动添加：
+# - ADMIN_USERNAME
+# - ADMIN_PASSWORD  
+# - JWT_SECRET
 
-# Bind KV for bookmarks data
-[[kv_namespaces]]
-binding = "BOOKMARKS_KV"
-id = "xxxxxxxxxx"
-preview_id = "xxxxxxxxx"
