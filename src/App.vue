@@ -146,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuth } from './composables/useAuth'
 import { useBookmarks } from './composables/useBookmarks'
 import { useTheme } from './composables/useTheme'
@@ -214,6 +214,11 @@ onMounted(async () => {
     await loadSettingsFromDB()
     await loadThemeFromDB()
   })
+  
+  // 监听自定义标题变化，更新页面标题
+  watch(customTitle, (newTitle) => {
+    document.title = newTitle
+  }, { immediate: true })
 })
 
 const handleLogout = async () => {
