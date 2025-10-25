@@ -240,7 +240,52 @@ const handleKeydown = (event) => {
 }
 
 // 生命周期钩子
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
+
+// 阻止背景滚动
+const preventBodyScroll = () => {
+  document.body.style.overflow = 'hidden'
+  document.body.style.position = 'fixed'
+  document.body.style.width = '100%'
+  // 记录当前滚动位置
+  const scrollY = window.scrollY
+  document.body.style.top = `-${scrollY}px`
+}
+
+const restoreBodyScroll = () => {
+  const scrollY = document.body.style.top
+  document.body.style.overflow = ''
+  document.body.style.position = ''
+  document.body.style.width = ''
+  document.body.style.top = ''
+  // 恢复滚动位置
+  if (scrollY) {
+    window.scrollTo(0, parseInt(scrollY || '0') * -1)
+  }
+}
+
+// 阻止触摸滚动穿透
+const preventTouchMove = (e) => {
+  // 如果滚动发生在设置容器内，允许滚动
+  if (e.target.closest('.settings-container')) {
+    return
+  }
+  // 否则阻止默认行为
+  e.preventDefault()
+}
+
+// 监听设置页面显示状态
+watch(show, (newShow) => {
+  if (newShow) {
+    preventBodyScroll()
+    // 添加触摸事件监听
+    document.addEventListener('touchmove', preventTouchMove, { passive: false })
+  } else {
+    restoreBodyScroll()
+    // 移除触摸事件监听
+    document.removeEventListener('touchmove', preventTouchMove)
+  }
+})
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
@@ -248,6 +293,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('touchmove', preventTouchMove)
+  // 确保组件卸载时恢复滚动
+  restoreBodyScroll()
 })
 
 defineExpose({
@@ -270,6 +318,9 @@ defineExpose({
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  /* 阻止触摸滚动穿透 */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .settings-container {
@@ -284,6 +335,9 @@ defineExpose({
   overflow: hidden;
   border: 1px solid var(--border);
   backdrop-filter: blur(20px);
+  /* 确保容器内的滚动不会影响外部 */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Header */
@@ -452,6 +506,10 @@ defineExpose({
   overflow-y: auto;
   background: var(--bg);
   position: relative;
+  /* 优化滚动体验 */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .settings-content::before {
