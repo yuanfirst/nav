@@ -180,7 +180,7 @@ const {
   deleteBookmark,
   reorderItems
 } = useBookmarks()
-const { isDark, toggleTheme } = useTheme()
+const { isDark, toggleTheme, loadThemeFromDB } = useTheme()
 const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, toggleSearch, toggleHideEmptyCategories, updateCustomTitle, updateFooterContent, setActiveSettingsTab, loadSettingsFromDB } = useSettings()
 const { setToastInstance, success: toastSuccess, error: toastError } = useToast()
 
@@ -209,6 +209,8 @@ onMounted(async () => {
     await fetchData()
     // 登录后加载设置
     await loadSettingsFromDB()
+    // 登录后加载主题
+    await loadThemeFromDB()
   })
 })
 

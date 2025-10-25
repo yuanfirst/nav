@@ -31,6 +31,18 @@ export function useSettings() {
             footerContent.value = data.data.footerContent
             localStorage.setItem('footerContent', data.data.footerContent)
           }
+          if (data.data.showSearch !== undefined) {
+            showSearch.value = data.data.showSearch === 'true'
+            localStorage.setItem('showSearch', data.data.showSearch)
+          }
+          if (data.data.hideEmptyCategories !== undefined) {
+            hideEmptyCategories.value = data.data.hideEmptyCategories === 'true'
+            localStorage.setItem('hideEmptyCategories', data.data.hideEmptyCategories)
+          }
+          if (data.data.activeSettingsTab) {
+            activeSettingsTab.value = data.data.activeSettingsTab
+            localStorage.setItem('activeSettingsTab', data.data.activeSettingsTab)
+          }
         }
       }
     } catch (error) {
@@ -60,12 +72,20 @@ export function useSettings() {
     }
   }
   
-  const toggleSearch = () => {
+  const toggleSearch = async () => {
     showSearch.value = !showSearch.value
+    localStorage.setItem('showSearch', showSearch.value.toString())
+    
+    // 保存到数据库
+    await saveSettingsToDB({ showSearch: showSearch.value.toString() })
   }
   
-  const toggleHideEmptyCategories = () => {
+  const toggleHideEmptyCategories = async () => {
     hideEmptyCategories.value = !hideEmptyCategories.value
+    localStorage.setItem('hideEmptyCategories', hideEmptyCategories.value.toString())
+    
+    // 保存到数据库
+    await saveSettingsToDB({ hideEmptyCategories: hideEmptyCategories.value.toString() })
   }
   
   const updateCustomTitle = async (title) => {
@@ -86,8 +106,12 @@ export function useSettings() {
     await saveSettingsToDB({ footerContent: newContent })
   }
   
-  const setActiveSettingsTab = (tab) => {
+  const setActiveSettingsTab = async (tab) => {
     activeSettingsTab.value = tab
+    localStorage.setItem('activeSettingsTab', tab)
+    
+    // 保存到数据库
+    await saveSettingsToDB({ activeSettingsTab: tab })
   }
   
   watch(showSearch, (newValue) => {
