@@ -4,33 +4,24 @@ import { useAuth } from './useAuth'
 const isDark = ref(localStorage.getItem('theme') === 'dark')
 
 export function useTheme() {
-  const { isAuthenticated, getAuthHeaders } = useAuth()
+  const { isAuthenticated, getAuthHeaders, apiRequest } = useAuth()
   
   // 保存主题到数据库
   const saveThemeToDB = async (theme) => {
     if (!isAuthenticated.value) return
     
     try {
-      const response = await fetch('/api/settings', {
+      await apiRequest('/api/settings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
         body: JSON.stringify({ settings: { theme } })
       })
-      
-      if (response.status === 401) {
-        console.warn('Token expired, theme not saved to database')
-        return
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(`Failed to save theme: ${errorData.details || errorData.error}`)
-      }
     } catch (error) {
-      console.error('Failed to save theme to database:', error)
+      if (error.message === 'Token expired') {
+        console.warn('Token expired, theme not saved to database')
+        // apiRequest 已经自动调用了 logout()，这里不需要额外处理
+      } else {
+        console.error('Failed to save theme to database:', error)
+      }
     }
   }
   
