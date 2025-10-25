@@ -75,7 +75,7 @@ import { useBookmarks } from '../composables/useBookmarks'
 import { useAuth } from '../composables/useAuth'
 
 const { categories, bookmarks } = useBookmarks()
-const { getAuthHeaders } = useAuth()
+const { getAuthHeaders, apiRequest } = useAuth()
 
 const show = ref(false)
 const fileInput = ref(null)
@@ -200,7 +200,11 @@ const handleFileSelect = async (event) => {
       throw new Error('不支持的文件格式')
     }
   } catch (error) {
-    importResult.value = { success: false, message: '❌ 导入失败：' + error.message }
+    if (error.message === 'Token expired') {
+      importResult.value = { success: false, message: '❌ 登录已过期，请重新登录' }
+    } else {
+      importResult.value = { success: false, message: '❌ 导入失败：' + error.message }
+    }
   } finally {
     importing.value = false
     fileInput.value.value = ''
@@ -217,12 +221,8 @@ const importJSON = async (text) => {
   }
   
   // 调用批量导入 API
-  const response = await fetch('/api/import', {
+  const response = await apiRequest('/api/import', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders()
-    },
     body: JSON.stringify({
       categories: data.categories,
       bookmarks: data.bookmarks
@@ -330,12 +330,8 @@ const importHTML = async (text) => {
   console.log('解析的书签:', bookmarks.slice(0, 3)) // 只打印前3个
   
   // 调用批量导入 API
-  const response = await fetch('/api/import', {
+  const response = await apiRequest('/api/import', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders()
-    },
     body: JSON.stringify({
       categories: categories,
       bookmarks: bookmarks

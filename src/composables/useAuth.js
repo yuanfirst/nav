@@ -45,6 +45,43 @@ export function useAuth() {
     authCallbacks.push(callback)
   }
   
+  // 全局 API 请求处理函数
+  const apiRequest = async (url, options = {}) => {
+    const defaultOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      }
+    }
+    
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers
+      }
+    }
+    
+    try {
+      const response = await fetch(url, mergedOptions)
+      
+      // 检查 401 错误
+      if (response.status === 401) {
+        // Token 过期，自动登出
+        logout()
+        throw new Error('Token expired')
+      }
+      
+      return response
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        throw error
+      }
+      throw new Error('网络请求失败')
+    }
+  }
+  
   // 监听认证状态变化
   watch(isAuthenticated, (newVal, oldVal) => {
     if (newVal !== oldVal) {
@@ -58,7 +95,8 @@ export function useAuth() {
     login,
     logout,
     getAuthHeaders,
-    onAuthChange
+    onAuthChange,
+    apiRequest
   }
 }
 

@@ -51,6 +51,11 @@ export function useBookmarks() {
       const bookmarksRes = await fetch('/api/bookmarks', {
         headers: getAuthHeaders()
       })
+      
+      if (await handleApiError(bookmarksRes)) {
+        return
+      }
+      
       const bookmarksData = await bookmarksRes.json()
       bookmarks.value = bookmarksData.data || []
     } catch (error) {
