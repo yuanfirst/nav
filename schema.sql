@@ -21,6 +21,15 @@ CREATE TABLE IF NOT EXISTS bookmarks (
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
+-- Settings table
+CREATE TABLE IF NOT EXISTS settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  key TEXT NOT NULL UNIQUE,
+  value TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- 添加索引以提升查询性能
 CREATE INDEX IF NOT EXISTS idx_bookmarks_category_position 
@@ -31,4 +40,7 @@ ON bookmarks(is_private);
 
 CREATE INDEX IF NOT EXISTS idx_categories_position 
 ON categories(position);
+
+CREATE INDEX IF NOT EXISTS idx_settings_key 
+ON settings(key);
 

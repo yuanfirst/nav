@@ -181,7 +181,7 @@ const {
   reorderItems
 } = useBookmarks()
 const { isDark, toggleTheme } = useTheme()
-const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, toggleSearch, toggleHideEmptyCategories, updateCustomTitle, updateFooterContent, setActiveSettingsTab } = useSettings()
+const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, toggleSearch, toggleHideEmptyCategories, updateCustomTitle, updateFooterContent, setActiveSettingsTab, loadSettingsFromDB } = useSettings()
 const { setToastInstance, success: toastSuccess, error: toastError } = useToast()
 
 const loading = ref(true)
@@ -207,6 +207,8 @@ onMounted(async () => {
   // 监听登录状态变化，重新获取数据
   onAuthChange(async () => {
     await fetchData()
+    // 登录后加载设置
+    await loadSettingsFromDB()
   })
 })
 
