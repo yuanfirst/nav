@@ -19,9 +19,11 @@ export function useSettings() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('Settings loaded from database:', data.data)
         if (data.success && data.data) {
           // 更新设置值
           if (data.data.customTitle) {
+            console.log('Updating customTitle to:', data.data.customTitle)
             customTitle.value = data.data.customTitle
             localStorage.setItem('customTitle', data.data.customTitle)
           }
