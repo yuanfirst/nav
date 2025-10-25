@@ -325,9 +325,7 @@ const importHTML = async (text) => {
     throw new Error('未找到有效的书签数据')
   }
   
-  // 调试：打印解析结果
-  console.log('解析的分类:', categories)
-  console.log('解析的书签:', bookmarks.slice(0, 3)) // 只打印前3个
+  // 解析完成
   
   // 调用批量导入 API
   const response = await apiRequest('/api/import', {
@@ -339,8 +337,6 @@ const importHTML = async (text) => {
   })
   
   const result = await response.json()
-  
-  console.log('导入结果:', result)
   
   if (result.success) {
     const msg = `✅ 导入成功！\n\n新增：${result.imported.categories} 个分类，${result.imported.bookmarks} 个书签\n跳过：${result.skipped.categories} 个分类，${result.skipped.bookmarks} 个书签（已存在）`

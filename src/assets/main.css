@@ -105,7 +105,7 @@
   --font-extrabold: 800;
 }
 
-.dark {
+html.dark {
   /* 暗色主题  */
   --primary: #818cf8;
   --primary-dark: #6366f1;
@@ -145,7 +145,7 @@
 
 /* 自动主题 - 跟随系统偏好 */
 @media (prefers-color-scheme: dark) {
-  :root:not(.light) {
+  :root:not(.light):not(.dark) {
     --primary: #818cf8;
     --primary-dark: #6366f1;
     --primary-light: #a5b4fc;
@@ -180,7 +180,7 @@
 }
 
 /* 强制亮色主题 */
-.light {
+html.light {
   --primary: #6366f1;
   --primary-dark: #4f46e5;
   --primary-light: #a5b4fc;
@@ -255,7 +255,7 @@ body {
   background: rgba(255, 255, 255, 0.9);
 }
 
-.dark .app-header {
+html.dark .app-header {
   background: rgba(15, 23, 42, 0.9);
 }
 
@@ -547,6 +547,7 @@ body {
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
@@ -565,7 +566,7 @@ body {
   margin-top: 0.4rem;
 }
 
-.dark .private-badge {
+html.dark .private-badge {
   background: rgba(255, 152, 0, 0.2);
 }
 
@@ -1158,7 +1159,7 @@ body {
   color: var(--primary-700);
 }
 
-.dark ::selection {
+html.dark ::selection {
   background: var(--primary-100);
   color: var(--primary-700);
 }
@@ -1231,7 +1232,7 @@ body {
     --text-secondary: #000000;
   }
   
-  .dark {
+  html.dark {
     --border: #ffffff;
     --text-secondary: #ffffff;
   }

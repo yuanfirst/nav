@@ -14,12 +14,10 @@ const error = ref(null)
 export function useVersion() {
   // 检查更新
   const checkForUpdates = async () => {
-    console.log('开始检查更新...')
     isChecking.value = true
     error.value = null
     
     try {
-      console.log('正在请求 GitHub API...')
       // 通过 GitHub API 获取最新版本
       const response = await fetch('https://api.github.com/repos/deerwan/nav/releases/latest')
       
@@ -28,7 +26,6 @@ export function useVersion() {
       }
       
       const data = await response.json()
-      console.log('GitHub API 响应:', data)
       
       if (data.tag_name) {
         latestVersion.value = data.tag_name.replace('v', '')
@@ -42,11 +39,6 @@ export function useVersion() {
         
         // 比较版本号
         hasUpdate.value = compareVersions(latestVersion.value, CURRENT_VERSION) > 0
-        console.log('版本比较结果:', {
-          current: CURRENT_VERSION,
-          latest: latestVersion.value,
-          hasUpdate: hasUpdate.value
-        })
         
         lastCheckTime.value = new Date().toISOString()
         
@@ -55,11 +47,6 @@ export function useVersion() {
         localStorage.setItem('latestVersion', latestVersion.value)
         localStorage.setItem('hasUpdate', hasUpdate.value.toString())
         localStorage.setItem('updateInfo', JSON.stringify(updateInfo.value))
-        
-        console.log('版本检查完成:', {
-          hasUpdate: hasUpdate.value,
-          latestVersion: latestVersion.value
-        })
         
         return {
           hasUpdate: hasUpdate.value,
@@ -146,15 +133,11 @@ export function useVersion() {
   
   // 初始化函数
   const initialize = () => {
-    console.log('初始化版本检查...')
     loadCachedVersion()
     
     // 如果超过24小时没有检查，自动检查更新
     if (shouldCheckForUpdates()) {
-      console.log('开始自动检查更新...')
       checkForUpdates()
-    } else {
-      console.log('跳过自动检查，24小时内已检查过')
     }
   }
   

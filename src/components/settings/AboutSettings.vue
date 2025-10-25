@@ -150,7 +150,6 @@ const {
 
 // 组件挂载时初始化版本检查
 onMounted(() => {
-  console.log('AboutSettings 组件已挂载，开始初始化版本检查')
   initialize()
 })
 
