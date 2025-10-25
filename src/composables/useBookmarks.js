@@ -7,18 +7,9 @@ const bookmarks = ref([])
 const searchQuery = ref('')
 
 export function useBookmarks() {
-  const { getAuthHeaders, logout } = useAuth()
+  const { getAuthHeaders, logout, apiRequest } = useAuth()
   const { error: toastError } = useToast()
   
-  // API 错误处理
-  const handleApiError = async (response) => {
-    if (response.status === 401) {
-      toastError('登录已过期，请重新登录')
-      logout()
-      return true
-    }
-    return false
-  }
   
   const filteredBookmarks = computed(() => {
     if (!searchQuery.value) return bookmarks.value
@@ -52,7 +43,8 @@ export function useBookmarks() {
         headers: getAuthHeaders()
       })
       
-      if (await handleApiError(bookmarksRes)) {
+      if (bookmarksRes.status === 401) {
+        logout()
         return
       }
       
@@ -74,7 +66,8 @@ export function useBookmarks() {
         body: JSON.stringify(data)
       })
       
-      if (await handleApiError(response)) {
+      if (response.status === 401) {
+        logout()
         return { success: false, error: '未授权' }
       }
       
@@ -91,12 +84,8 @@ export function useBookmarks() {
   
   const updateBookmark = async (id, data) => {
     try {
-      const response = await fetch(`/api/bookmarks/${id}`, {
+      const response = await apiRequest(`/api/bookmarks/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
         body: JSON.stringify(data)
       })
       
@@ -107,15 +96,17 @@ export function useBookmarks() {
       }
       return { success: false, error: '更新失败' }
     } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
       return { success: false, error: '网络错误' }
     }
   }
   
   const deleteBookmark = async (id) => {
     try {
-      const response = await fetch(`/api/bookmarks/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await apiRequest(`/api/bookmarks/${id}`, {
+        method: 'DELETE'
       })
       
       const result = await response.json()
@@ -125,18 +116,17 @@ export function useBookmarks() {
       }
       return { success: false, error: '删除失败' }
     } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
       return { success: false, error: '网络错误' }
     }
   }
   
   const addCategory = async (name) => {
     try {
-      const response = await fetch('/api/categories', {
+      const response = await apiRequest('/api/categories', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
         body: JSON.stringify({ name })
       })
       
@@ -147,18 +137,17 @@ export function useBookmarks() {
       }
       return { success: false, error: '添加失败' }
     } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
       return { success: false, error: '网络错误' }
     }
   }
   
   const updateCategory = async (id, name) => {
     try {
-      const response = await fetch(`/api/categories/${id}`, {
+      const response = await apiRequest(`/api/categories/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
         body: JSON.stringify({ name })
       })
       
@@ -169,15 +158,17 @@ export function useBookmarks() {
       }
       return { success: false, error: '更新失败' }
     } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
       return { success: false, error: '网络错误' }
     }
   }
   
   const deleteCategory = async (id) => {
     try {
-      const response = await fetch(`/api/categories/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await apiRequest(`/api/categories/${id}`, {
+        method: 'DELETE'
       })
       
       const result = await response.json()
@@ -187,18 +178,17 @@ export function useBookmarks() {
       }
       return { success: false, error: '删除失败' }
     } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
       return { success: false, error: '网络错误' }
     }
   }
   
   const reorderItems = async (type, items) => {
     try {
-      const response = await fetch('/api/reorder', {
+      const response = await apiRequest('/api/reorder', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
         body: JSON.stringify({ type, items })
       })
       
@@ -209,6 +199,9 @@ export function useBookmarks() {
       }
       return { success: false, error: '排序失败' }
     } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
       return { success: false, error: '网络错误' }
     }
   }
