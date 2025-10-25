@@ -25,6 +25,54 @@ export async function onRequest(context) {
     return await next();
   }
   
+  // settings API 需要认证
+  if (url.pathname === '/api/settings') {
+    const authHeader = request.headers.get('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    
+    // 简单的token验证（时间戳 + 密钥哈希）
+    try {
+      const [timestamp, hash] = token.split('.');
+      const tokenTime = parseInt(timestamp);
+      const now = Date.now();
+      
+      // Token有效期15分钟
+      if (now - tokenTime > 15 * 60 * 1000) {
+        return new Response(JSON.stringify({ error: 'Token expired' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // 验证hash
+      const tokenData = timestamp + '_' + env.JWT_SECRET;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(tokenData);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const expectedHash = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+      
+      if (hash !== expectedHash) {
+        return new Response(JSON.stringify({ error: 'Invalid token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Invalid token format' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+  
   // 其他API需要验证token
   if (url.pathname.startsWith('/api/')) {
     const authHeader = request.headers.get('Authorization');

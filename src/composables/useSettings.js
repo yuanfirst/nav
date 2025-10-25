@@ -64,8 +64,14 @@ export function useSettings() {
         body: JSON.stringify({ settings })
       })
       
+      if (response.status === 401) {
+        console.warn('Token expired, settings not saved to database')
+        return
+      }
+      
       if (!response.ok) {
-        throw new Error('Failed to save settings to database')
+        const errorData = await response.json()
+        throw new Error(`Failed to save settings: ${errorData.details || errorData.error}`)
       }
     } catch (error) {
       console.error('Failed to save settings to database:', error)

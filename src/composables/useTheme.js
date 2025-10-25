@@ -20,8 +20,14 @@ export function useTheme() {
         body: JSON.stringify({ settings: { theme } })
       })
       
+      if (response.status === 401) {
+        console.warn('Token expired, theme not saved to database')
+        return
+      }
+      
       if (!response.ok) {
-        throw new Error('Failed to save theme to database')
+        const errorData = await response.json()
+        throw new Error(`Failed to save theme: ${errorData.details || errorData.error}`)
       }
     } catch (error) {
       console.error('Failed to save theme to database:', error)

@@ -56,7 +56,11 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Failed to update settings' }), {
+    console.error('Settings API Error:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Failed to update settings',
+      details: error.message 
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
