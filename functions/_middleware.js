@@ -17,16 +17,17 @@ export async function onRequest(context) {
     return await next();
   }
   
-  // GET请求的bookmarks和categories不需要登录即可访问（只读）
+  // GET请求的bookmarks、categories和settings不需要登录即可访问（只读）
   if (request.method === 'GET' && 
       (url.pathname === '/api/bookmarks' || 
        url.pathname === '/api/categories' ||
-       url.pathname === '/api/fetch-metadata')) {
+       url.pathname === '/api/fetch-metadata' ||
+       url.pathname === '/api/settings')) {
     return await next();
   }
   
-  // settings API 需要认证
-  if (url.pathname === '/api/settings') {
+  // settings API 的 POST 请求需要认证（修改设置）
+  if (url.pathname === '/api/settings' && request.method === 'POST') {
     const authHeader = request.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

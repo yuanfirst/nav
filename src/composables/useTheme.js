@@ -34,13 +34,11 @@ export function useTheme() {
     }
   }
   
-  // 从数据库加载主题
+  // 从数据库加载主题（未登录用户也可以访问）
   const loadThemeFromDB = async () => {
-    if (!isAuthenticated.value) return
-    
     try {
       const response = await fetch('/api/settings', {
-        headers: getAuthHeaders()
+        headers: isAuthenticated.value ? getAuthHeaders() : {}
       })
       
       if (response.ok) {

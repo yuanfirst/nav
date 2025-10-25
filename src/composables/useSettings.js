@@ -10,13 +10,11 @@ const activeSettingsTab = ref(localStorage.getItem('activeSettingsTab') || 'appe
 export function useSettings() {
   const { isAuthenticated, getAuthHeaders } = useAuth()
   
-  // 从数据库加载设置
+  // 从数据库加载设置（未登录用户也可以访问）
   const loadSettingsFromDB = async () => {
-    if (!isAuthenticated.value) return
-    
     try {
       const response = await fetch('/api/settings', {
-        headers: getAuthHeaders()
+        headers: isAuthenticated.value ? getAuthHeaders() : {}
       })
       
       if (response.ok) {

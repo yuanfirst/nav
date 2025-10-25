@@ -197,6 +197,9 @@ const toast = ref(null)
 
 onMounted(async () => {
   await fetchData()
+  // 初始化时加载设置（无论是否登录）
+  await loadSettingsFromDB()
+  await loadThemeFromDB()
   loading.value = false
   
   // 初始化 Toast
@@ -207,9 +210,8 @@ onMounted(async () => {
   // 监听登录状态变化，重新获取数据
   onAuthChange(async () => {
     await fetchData()
-    // 登录后加载设置
+    // 登录后重新加载设置（确保获取最新数据）
     await loadSettingsFromDB()
-    // 登录后加载主题
     await loadThemeFromDB()
   })
 })
