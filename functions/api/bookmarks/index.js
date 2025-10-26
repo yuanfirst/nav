@@ -7,6 +7,21 @@ export async function onRequestGet(context) {
     const authHeader = request.headers.get('Authorization');
     const isAuthenticated = authHeader && authHeader.startsWith('Bearer ');
     
+    // 获取 publicMode 设置
+    const publicModeSetting = await env.DB.prepare(
+      'SELECT value FROM settings WHERE key = ?'
+    ).bind('publicMode').first();
+    
+    const publicMode = publicModeSetting?.value !== 'false';
+    
+    // 如果是非公开模式且未登录，返回空数组
+    if (!publicMode && !isAuthenticated) {
+      return new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     let query = `
       SELECT b.*, c.name as category_name
       FROM bookmarks b

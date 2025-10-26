@@ -79,9 +79,10 @@
               @editTitle="editTitle"
               @editFooter="editFooter"
               @toggleTheme="$emit('toggleTheme')"
-              @toggleSearch="$emit('toggleSearch')"
-              @toggleHideEmpty="$emit('toggleHideEmpty')"
-            />
+                         @toggleSearch="$emit('toggleSearch')"
+                         @toggleHideEmpty="$emit('toggleHideEmpty')"
+                         @togglePublicMode="$emit('togglePublicMode')"
+                       />
           </div>
         </div>
       </div>
@@ -112,6 +113,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  publicMode: {
+    type: Boolean,
+    default: true
+  },
   customTitle: {
     type: String,
     default: '📚 书签管理'
@@ -126,7 +131,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['action', 'close', 'toggleTheme', 'toggleSearch', 'toggleHideEmpty', 'updateTitle', 'updateFooter', 'editTitle', 'editFooter', 'setActiveTab'])
+const emit = defineEmits(['action', 'close', 'toggleTheme', 'toggleSearch', 'toggleHideEmpty', 'togglePublicMode', 'updateTitle', 'updateFooter', 'editTitle', 'editFooter', 'setActiveTab'])
 
 const menuItems = ref([
   { id: 'appearance', name: '外观设置', icon: '🎨' },
@@ -154,6 +159,7 @@ const componentProps = computed(() => ({
   isDark: props.isDark,
   showSearch: props.showSearch,
   hideEmptyCategories: props.hideEmptyCategories,
+  publicMode: props.publicMode,
   customTitle: props.customTitle,
   footerContent: props.footerContent,
   totalBookmarks: totalBookmarks.value,

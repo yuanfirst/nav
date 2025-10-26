@@ -70,6 +70,19 @@
         <p>加载中...</p>
       </div>
       
+      <div v-else-if="!publicMode && !isAuthenticated" class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <p>需要登录才能访问</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+          此书签站点处于非公开模式，请先登录
+        </p>
+        <button class="btn btn-primary" @click="loginModal.open()" style="margin-top: 1rem;">
+          立即登录
+        </button>
+      </div>
+      
       <div v-else-if="categories.length === 0" class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -123,6 +136,7 @@
       :bookmarks="bookmarks"
       :show-search="showSearch"
       :hide-empty-categories="hideEmptyCategories"
+      :public-mode="publicMode"
       :custom-title="customTitle"
       :footer-content="footerContent"
       :active-settings-tab="activeSettingsTab"
@@ -130,6 +144,7 @@
       @toggle-theme="toggleTheme"
       @toggle-search="toggleSearch"
       @toggle-hide-empty="toggleHideEmptyCategories"
+      @toggle-public-mode="togglePublicMode"
       @update-title="updateCustomTitle"
       @update-footer="updateFooterContent"
       @editTitle="handleEditTitle"
@@ -146,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useAuth } from './composables/useAuth'
 import { useBookmarks } from './composables/useBookmarks'
 import { useTheme } from './composables/useTheme'
@@ -181,7 +196,7 @@ const {
   reorderItems
 } = useBookmarks()
 const { isDark, toggleTheme, loadThemeFromDB } = useTheme()
-const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, toggleSearch, toggleHideEmptyCategories, updateCustomTitle, updateFooterContent, setActiveSettingsTab, loadSettingsFromDB } = useSettings()
+const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, publicMode, toggleSearch, toggleHideEmptyCategories, togglePublicMode, updateCustomTitle, updateFooterContent, setActiveSettingsTab, loadSettingsFromDB } = useSettings()
 const { setToastInstance, success: toastSuccess, error: toastError } = useToast()
 
 const loading = ref(true)

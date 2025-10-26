@@ -6,6 +6,7 @@ const hideEmptyCategories = ref(localStorage.getItem('hideEmptyCategories') === 
 const customTitle = ref(localStorage.getItem('customTitle') || '📚 书签管理')
 const footerContent = ref(localStorage.getItem('footerContent') || '<p>Made with ❤️ using <a href="https://github.com/deerwan/nav" target="_blank">Vue 3 and Cloudflare</a></p>')
 const activeSettingsTab = ref(localStorage.getItem('activeSettingsTab') || 'appearance')
+const publicMode = ref(localStorage.getItem('publicMode') !== 'false')
 
 // 加载标志位，避免循环触发
 const isLoadingFromDB = ref(false)
@@ -44,6 +45,10 @@ export function useSettings() {
           if (data.data.activeSettingsTab) {
             activeSettingsTab.value = data.data.activeSettingsTab
             localStorage.setItem('activeSettingsTab', data.data.activeSettingsTab)
+          }
+          if (data.data.publicMode !== undefined) {
+            publicMode.value = data.data.publicMode === 'true'
+            localStorage.setItem('publicMode', data.data.publicMode)
           }
         }
       }
@@ -113,6 +118,13 @@ export function useSettings() {
     
     // 保存到数据库
     await saveSettingsToDB({ activeSettingsTab: tab })
+  }
+  
+  const togglePublicMode = async () => {
+    publicMode.value = !publicMode.value
+    localStorage.setItem('publicMode', publicMode.value.toString())
+    
+    await saveSettingsToDB({ publicMode: publicMode.value.toString() })
   }
   
   watch(showSearch, async (newValue) => {
@@ -206,17 +218,37 @@ export function useSettings() {
     }
   })
   
+  watch(publicMode, async (newValue) => {
+    if (!isLoadingFromDB.value) {
+      localStorage.setItem('publicMode', newValue.toString())
+      if (isAuthenticated.value) {
+        try {
+          await apiRequest('/api/settings', {
+            method: 'POST',
+            body: JSON.stringify({ settings: { publicMode: newValue.toString() } })
+          })
+        } catch (error) {
+          if (error.message === 'Token expired') {
+            console.warn('Token expired, publicMode not saved to database')
+          }
+        }
+      }
+    }
+  })
+  
   return {
     showSearch,
     hideEmptyCategories,
     customTitle,
     footerContent,
     activeSettingsTab,
+    publicMode,
     toggleSearch,
     toggleHideEmptyCategories,
     updateCustomTitle,
     updateFooterContent,
     setActiveSettingsTab,
+    togglePublicMode,
     loadSettingsFromDB
   }
 }

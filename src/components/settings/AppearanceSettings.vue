@@ -75,6 +75,25 @@
       </div>
       <div class="form-hint">不显示没有书签的分类</div>
     </div>
+
+    <!-- 公开模式 -->
+    <div class="form-group">
+      <label class="form-label">访问模式</label>
+      <div class="form-row">
+        <span class="form-text">{{ publicMode ? '公开模式' : '非公开模式' }}</span>
+        <label class="switch">
+          <input
+            type="checkbox"
+            :checked="publicMode"
+            @change="$emit('togglePublicMode')"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="form-hint">
+        {{ publicMode ? '未登录用户可访问公开书签' : '未登录用户无法访问书签和分类' }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -83,11 +102,12 @@ defineProps({
   isDark: Boolean,
   showSearch: Boolean,
   hideEmptyCategories: Boolean,
+  publicMode: Boolean,
   customTitle: String,
   footerContent: String
 })
 
-defineEmits(['editTitle', 'editFooter', 'toggleTheme', 'toggleSearch', 'toggleHideEmpty'])
+defineEmits(['editTitle', 'editFooter', 'toggleTheme', 'toggleSearch', 'toggleHideEmpty', 'togglePublicMode'])
 </script>
 
 <style scoped>

@@ -33,18 +33,33 @@ export function useBookmarks() {
   
   const fetchData = async () => {
     try {
+      const authHeaders = getAuthHeaders()
+      
       // 获取分类
-      const categoriesRes = await fetch('/api/categories')
-      const categoriesData = await categoriesRes.json()
-      categories.value = categoriesData.data || []
+      const categoriesRes = await fetch('/api/categories', {
+        headers: authHeaders
+      })
+      
+      if (categoriesRes.status === 401) {
+        if (authHeaders.Authorization) {
+          logout()
+        }
+        categories.value = []
+      } else {
+        const categoriesData = await categoriesRes.json()
+        categories.value = categoriesData.data || []
+      }
       
       // 获取书签（如果已登录，带上token以获取私密书签）
       const bookmarksRes = await fetch('/api/bookmarks', {
-        headers: getAuthHeaders()
+        headers: authHeaders
       })
       
       if (bookmarksRes.status === 401) {
-        logout()
+        if (authHeaders.Authorization) {
+          logout()
+        }
+        bookmarks.value = []
         return
       }
       
