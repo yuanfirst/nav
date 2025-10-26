@@ -260,6 +260,7 @@ html.dark .app-header {
 }
 
 .header-content {
+  position: relative;
   max-width: 1400px;
   margin: 0 auto;
   display: flex;
@@ -272,6 +273,27 @@ html.dark .app-header {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
+}
+
+/* 移动端汉堡菜单按钮 - 默认隐藏 */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: color 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  color: var(--primary);
+}
+
+.mobile-menu-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
 }
 
 .header-actions {
@@ -917,10 +939,42 @@ html.dark .private-badge {
     height: 12px;
   }
   
-    .app-main {
-      margin: 1rem 0;
-    }
+  .app-main {
+    margin: 1rem 0;
   }
+  
+  /* 移动端显示汉堡菜单按钮 */
+  .mobile-menu-btn {
+    display: block;
+  }
+  
+  /* 移动端折叠操作按钮 */
+  .header-actions {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px var(--shadow);
+    padding: 0.5rem;
+    flex-direction: column;
+    min-width: 150px;
+    z-index: 1000;
+    margin-top: 0.5rem;
+  }
+  
+  /* 移动端展开菜单 */
+  .header-actions.mobile-menu-open {
+    display: flex;
+  }
+  
+  .header-actions .btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
 
 /* Footer */
 .app-footer {

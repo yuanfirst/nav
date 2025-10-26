@@ -5,12 +5,20 @@
       <div class="header-content">
         <h1 class="app-title">{{ customTitle }}</h1>
         
-        <div class="header-actions">
+        <!-- 移动端汉堡菜单按钮 -->
+        <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        
+        <!-- 桌面端/移动端展开的操作按钮 -->
+        <div class="header-actions" :class="{ 'mobile-menu-open': showMobileMenu }">
           <!-- Admin Controls in Header -->
           <template v-if="isAuthenticated">
             <button 
               class="btn btn-secondary"
-              @click="settingsPage.open()"
+              @click="settingsPage.open(); showMobileMenu = false"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <circle cx="12" cy="12" r="3"/>
@@ -22,7 +30,7 @@
             <button 
               class="btn"
               :class="isEditMode ? 'btn-primary' : 'btn-secondary'"
-              @click="isEditMode = !isEditMode"
+              @click="isEditMode = !isEditMode; showMobileMenu = false"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -35,14 +43,14 @@
           <button 
             v-if="!isAuthenticated" 
             class="btn btn-primary"
-            @click="loginModal.open()"
+            @click="loginModal.open(); showMobileMenu = false"
           >
             登录
           </button>
           <button 
             v-else 
             class="btn btn-secondary"
-            @click="handleLogout"
+            @click="handleLogout(); showMobileMenu = false"
           >
             退出
           </button>
@@ -201,6 +209,7 @@ const { setToastInstance, success: toastSuccess, error: toastError } = useToast(
 
 const loading = ref(true)
 const isEditMode = ref(false)
+const showMobileMenu = ref(false)
 const loginModal = ref(null)
 const bookmarkDialog = ref(null)
 const confirmDialog = ref(null)
