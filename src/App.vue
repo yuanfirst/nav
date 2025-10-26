@@ -5,8 +5,8 @@
       <div class="header-content">
         <h1 class="app-title">{{ customTitle }}</h1>
         
-        <!-- 移动端汉堡菜单按钮 -->
-        <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
+        <!-- 汉堡菜单按钮 -->
+        <button class="mobile-menu-btn" @click.stop="showMobileMenu = !showMobileMenu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M3 12h18M3 6h18M3 18h18"/>
           </svg>
@@ -95,13 +95,29 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
         </svg>
-        <p>还没有分类</p>
-        <p v-if="isAuthenticated" style="font-size: 0.9rem; margin-top: 0.5rem;">
-          点击右上角 ⚙️ 设置按钮开始添加
+        <p>还没有分类和书签</p>
+        <p v-if="isAuthenticated" style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-secondary);">
+          点击右上角 <strong style="color: var(--primary);">⚙️ 设置</strong> → <strong style="color: var(--primary);">📊 数据管理</strong> → <strong style="color: var(--primary);">导入书签</strong>
+        </p>
+        <p v-if="isAuthenticated" style="font-size: 0.875rem; margin-top: 0.75rem; color: var(--text-tertiary);">
+          或点击 <strong style="color: var(--primary);">✏️ 编辑</strong> 按钮手动添加
         </p>
         <p v-else style="font-size: 0.9rem; margin-top: 0.5rem;">
           请先登录以管理书签
         </p>
+        <button 
+          v-if="isAuthenticated" 
+          class="btn btn-primary" 
+          @click="settingsPage.open(); setActiveSettingsTab('data')" 
+          style="margin-top: 1.5rem;"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 18px; height: 18px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          快速导入书签
+        </button>
       </div>
       
       <div v-else class="categories-container">
@@ -169,7 +185,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useAuth } from './composables/useAuth'
 import { useBookmarks } from './composables/useBookmarks'
 import { useTheme } from './composables/useTheme'
@@ -243,6 +259,19 @@ onMounted(async () => {
   watch(customTitle, (newTitle) => {
     document.title = newTitle
   }, { immediate: true })
+  
+  // 点击外部关闭汉堡菜单
+  const handleClickOutside = (event) => {
+    if (showMobileMenu.value && !event.target.closest('.header-content')) {
+      showMobileMenu.value = false
+    }
+  }
+  document.addEventListener('click', handleClickOutside)
+  
+  // 清理事件监听
+  onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+  })
 })
 
 const handleLogout = async () => {

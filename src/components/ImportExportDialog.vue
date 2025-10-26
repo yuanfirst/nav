@@ -32,7 +32,6 @@
           
           <div class="import-section">
             <h4>导入书签</h4>
-            <p class="section-description">从文件导入书签（支持 JSON 和 HTML 格式）</p>
             <div class="import-notice">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <circle cx="12" cy="12" r="10"/>
@@ -47,14 +46,21 @@
               style="display: none"
               @change="handleFileSelect"
             >
-            <button class="btn btn-primary" @click="selectFile" :disabled="importing">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              {{ importing ? '导入中...' : '选择文件导入' }}
-            </button>
+            <div class="import-button-wrapper">
+              <button class="import-file-btn" @click="selectFile" :disabled="importing">
+                <div class="import-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <div class="import-text">
+                  <span class="import-title">{{ importing ? '导入中...' : '选择文件导入' }}</span>
+                  <span class="import-subtitle">支持 JSON 和 HTML 格式</span>
+                </div>
+              </button>
+            </div>
             
             <!-- 进度条 -->
             <div v-if="importing" class="import-progress">
@@ -552,6 +558,80 @@ defineExpose({
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* 导入按钮样式优化 */
+.import-button-wrapper {
+  margin-top: 1rem;
+}
+
+.import-file-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border: none;
+  border-radius: var(--radius);
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.import-file-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.import-file-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.import-file-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.import-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.import-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.5;
+}
+
+.import-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.import-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.import-subtitle {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
 }
 
 /* 进度条样式 */
