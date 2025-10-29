@@ -1,12 +1,32 @@
 <template>
   <div 
     class="bookmark-card"
-    :draggable="isEditMode"
+    :class="{
+      'selected': isSelected,
+      'dragging': isDragging,
+      'batch-mode': isBatchMode,
+      'drop-before': isDragOver && dropPosition === 'before',
+      'drop-after': isDragOver && dropPosition === 'after'
+    }"
+    :draggable="isEditMode && !isBatchMode"
+    :tabindex="isEditMode ? 0 : -1"
+    @keydown="handleKeydown"
     @dragstart="handleDragStart"
-    @dragover.prevent
+    @dragend="handleDragEnd"
+    @dragenter="handleDragEnter"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
     @drop="handleDrop"
     @click="handleClick"
   >
+    <div v-if="isBatchMode" class="selection-checkbox" @click.stop="handleSelectionToggle">
+      <input 
+        type="checkbox" 
+        :checked="isSelected"
+        @change="handleSelectionToggle"
+      >
+    </div>
+    
     <div class="card-header">
       <img 
         :src="iconUrl" 
@@ -33,7 +53,7 @@
       <span>私密</span>
     </div>
     
-    <div v-if="isEditMode" class="card-actions" @click.stop>
+    <div v-if="isEditMode && !isBatchMode" class="card-actions" @click.stop>
       <button class="icon-btn" @click="$emit('edit', bookmark)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -46,6 +66,13 @@
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
       </button>
+    </div>
+    
+    <div v-if="isEditMode && !isBatchMode" class="drag-handle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="4" y1="8" x2="20" y2="8"/>
+        <line x1="4" y1="16" x2="20" y2="16"/>
+      </svg>
     </div>
   </div>
 </template>
@@ -61,12 +88,35 @@ const props = defineProps({
   isEditMode: {
     type: Boolean,
     default: false
+  },
+  isBatchMode: {
+    type: Boolean,
+    default: false
+  },
+  isSelected: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['edit', 'delete', 'dragstart', 'drop'])
+const emit = defineEmits([
+  'edit',
+  'delete',
+  'dragstart',
+  'drop',
+  'toggleSelect',
+  'keyboardReorder',
+  'dragenter',
+  'dragleave',
+  'dragoverPosition',
+  'dragend'
+])
 
 const iconError = ref(false)
+const isDragging = ref(false)
+const isDragOver = ref(false)
+const dropPosition = ref('after')
+let dragPreviewEl = null
 
 const iconUrl = computed(() => {
   // 默认 SVG 图标
@@ -106,22 +156,252 @@ const handleIconError = () => {
 const handleClick = () => {
   if (!props.isEditMode) {
     window.open(props.bookmark.url, '_blank')
+    return
   }
+  
+  if (props.isBatchMode) {
+    emit('toggleSelect', props.bookmark.id)
+  }
+}
+
+const createDragPreview = () => {
+  const el = document.createElement('div')
+  el.className = 'drag-preview'
+  el.innerHTML = `
+    <div class="drag-preview__content">
+      <span class="drag-preview__title">${props.bookmark.name}</span>
+      <span class="drag-preview__url">${displayUrl.value}</span>
+    </div>
+  `
+  document.body.appendChild(el)
+  return el
 }
 
 const handleDragStart = (e) => {
-  if (props.isEditMode) {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('bookmarkId', props.bookmark.id)
-    emit('dragstart', props.bookmark)
+  if (!props.isEditMode || props.isBatchMode) return
+  
+  isDragging.value = true
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('bookmarkId', props.bookmark.id)
+  emit('dragstart', props.bookmark)
+  
+  dragPreviewEl = createDragPreview()
+  const rect = dragPreviewEl.getBoundingClientRect()
+  e.dataTransfer.setDragImage(dragPreviewEl, rect.width / 2, rect.height / 2)
+}
+
+const handleDragEnd = () => {
+  isDragging.value = false
+  isDragOver.value = false
+  dropPosition.value = 'after'
+  if (dragPreviewEl?.parentNode) {
+    dragPreviewEl.parentNode.removeChild(dragPreviewEl)
+    dragPreviewEl = null
   }
+  emit('dragend', props.bookmark.id)
+}
+
+const handleSelectionToggle = () => {
+  emit('toggleSelect', props.bookmark.id)
+}
+
+const handleDragEnter = () => {
+  if (!props.isEditMode || props.isBatchMode) return
+  isDragOver.value = true
+  emit('dragenter', props.bookmark.id)
+}
+
+const handleDragOver = (e) => {
+  if (!props.isEditMode || props.isBatchMode) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const offsetY = e.clientY - rect.top
+  dropPosition.value = offsetY < rect.height / 2 ? 'before' : 'after'
+  isDragOver.value = true
+  emit('dragoverPosition', { id: props.bookmark.id, position: dropPosition.value })
+}
+
+const handleDragLeave = () => {
+  if (!props.isEditMode || props.isBatchMode) return
+  isDragOver.value = false
+  emit('dragleave', props.bookmark.id)
 }
 
 const handleDrop = (e) => {
-  if (props.isEditMode) {
-    const draggedId = e.dataTransfer.getData('bookmarkId')
-    emit('drop', { draggedId: parseInt(draggedId), targetId: props.bookmark.id })
+  if (!props.isEditMode || props.isBatchMode) return
+  const draggedId = e.dataTransfer.getData('bookmarkId')
+  emit('drop', {
+    draggedId: parseInt(draggedId, 10),
+    targetId: props.bookmark.id,
+    position: dropPosition.value
+  })
+  isDragOver.value = false
+}
+
+const handleKeydown = (event) => {
+  if (!props.isEditMode) return
+  switch (event.key) {
+    case 'Enter':
+      if (!props.isBatchMode) {
+        emit('edit', props.bookmark)
+      }
+      break
+    case ' ': // Space
+    case 'Spacebar':
+      event.preventDefault()
+      emit('toggleSelect', props.bookmark.id)
+      break
+    case 'Delete':
+    case 'Backspace':
+      event.preventDefault()
+      emit('delete', props.bookmark)
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      emit('keyboardReorder', { id: props.bookmark.id, direction: 'up' })
+      break
+    case 'ArrowDown':
+      event.preventDefault()
+      emit('keyboardReorder', { id: props.bookmark.id, direction: 'down' })
+      break
   }
 }
 </script>
 
+<style scoped>
+.bookmark-card {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bookmark-card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  cursor: grabbing !important;
+}
+
+.bookmark-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+}
+
+.bookmark-card.batch-mode {
+  cursor: pointer;
+  padding-top: 2.5rem;
+}
+
+.drag-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-9999px, -9999px);
+}
+
+.drag-preview__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(15, 23, 42, 0.9);
+  color: white;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.3);
+  min-width: 180px;
+}
+
+.drag-preview__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.drag-preview__url {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.selection-checkbox {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  box-shadow: 0 2px 4px var(--shadow);
+}
+
+.selection-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: grab;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px var(--shadow);
+}
+
+.drag-handle svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: var(--text-secondary);
+}
+
+.bookmark-card:hover .drag-handle {
+  opacity: 0.8;
+}
+
+.drag-handle:hover {
+  opacity: 1 !important;
+  background: var(--bg-hover);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.bookmark-card.drop-before::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+  border-radius: var(--radius);
+  z-index: 20;
+}
+
+.bookmark-card.drop-after::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+  border-radius: var(--radius);
+  z-index: 20;
+}
+
+@media (max-width: 768px) {
+  .drag-handle {
+    opacity: 0.6;
+  }
+}
+</style>

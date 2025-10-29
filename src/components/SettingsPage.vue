@@ -132,6 +132,10 @@ const props = defineProps({
   activeSettingsTab: {
     type: String,
     default: 'appearance'
+  },
+  emptyCategoryCount: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -168,7 +172,8 @@ const componentProps = computed(() => ({
   customTitle: props.customTitle,
   footerContent: props.footerContent,
   totalBookmarks: totalBookmarks.value,
-  privateBookmarks: privateBookmarks.value
+  privateBookmarks: privateBookmarks.value,
+  emptyCategoryCount: props.emptyCategoryCount
 }))
 
 const open = () => {

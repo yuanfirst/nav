@@ -221,6 +221,82 @@ export function useBookmarks() {
     }
   }
   
+  const batchOperation = async (operation, bookmarkIds, data = {}, categoryIds = null) => {
+    try {
+      const body = { operation, data }
+      if (bookmarkIds) {
+        body.bookmarkIds = bookmarkIds
+      }
+      if (categoryIds) {
+        body.categoryIds = categoryIds
+      }
+      
+      const response = await apiRequest('/api/batch-operations', {
+        method: 'POST',
+        body: JSON.stringify(body)
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        await fetchData()
+        return { success: true }
+      }
+      return { success: false, error: '批量操作失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+  
+  const getEmptyCategories = async () => {
+    try {
+      const response = await apiRequest('/api/cleanup-empty-categories', {
+        method: 'GET'
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        return { 
+          success: true, 
+          emptyCategories: result.emptyCategories || [],
+          count: result.count || 0
+        }
+      }
+      return { success: false, error: result.error || '获取空分类失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+  
+  const cleanupEmptyCategories = async () => {
+    try {
+      const response = await apiRequest('/api/cleanup-empty-categories', {
+        method: 'POST'
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        await fetchData()
+        return { 
+          success: true,
+          deletedCount: result.deletedCount || 0,
+          deletedCategories: result.deletedCategories || []
+        }
+      }
+      return { success: false, error: result.error || '清理空分类失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+  
   return {
     categories,
     bookmarks,
@@ -234,7 +310,10 @@ export function useBookmarks() {
     addCategory,
     updateCategory,
     deleteCategory,
-    reorderItems
+    reorderItems,
+    batchOperation,
+    getEmptyCategories,
+    cleanupEmptyCategories
   }
 }
 
