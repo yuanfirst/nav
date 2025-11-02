@@ -3,7 +3,19 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-content">
-        <h1 class="app-title">{{ customTitle }}</h1>
+        <div class="header-left">
+          <button 
+            v-if="categories.length > 0"
+            class="sidebar-toggle-btn" 
+            @click="sidebarOpen = !sidebarOpen"
+            title="切换分类侧边栏"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M3 12h18M3 6h18M3 18h18"/>
+            </svg>
+          </button>
+          <h1 class="app-title">{{ customTitle }}</h1>
+        </div>
         
         <!-- 未登录状态：直接显示登录按钮 -->
         <button 
@@ -62,8 +74,6 @@
         <SearchBar />
       </div>
       
-      <CategoryButtons />
-      
       <!-- Edit Mode Toolbar -->
       <EditModeToolbar 
         :is-edit-mode="isEditMode"
@@ -84,8 +94,7 @@
       />
     </header>
     
-    <!-- Main Content -->
-    <main class="app-main">
+    <main class="page-main">
       <div v-if="loading" class="loading">
         <div class="spinner"></div>
         <p>加载中...</p>
@@ -133,25 +142,59 @@
         </button>
       </div>
       
-      <div v-else class="categories-container">
-        <CategorySection
-          v-for="category in categories"
-          v-show="!hideEmptyCategories || (bookmarksByCategory[category.id]?.length > 0)"
-          :key="category.id"
-          :category="category"
-          :bookmarks="bookmarksByCategory[category.id] || []"
+      <div v-else class="main-layout">
+        <!-- Sidebar Backdrop (Mobile) -->
+        <div 
+          v-if="sidebarOpen && !isDesktop" 
+          class="sidebar-backdrop" 
+          @click="sidebarOpen = false"
+        ></div>
+        
+        <!-- Category Sidebar -->
+        <CategorySidebar
+          :categories="categories"
+          :bookmarkCountByCategory="bookmarkCountByCategory"
+          :totalBookmarkCount="totalBookmarkCount"
+          :selectedCategoryId="selectedCategoryId"
+          :selectedCategoryIds="selectedCategoryIds"
+          :is-open="sidebarOpen"
+          :is-desktop="isDesktop"
           :is-edit-mode="isEditMode"
           :is-batch-mode="isBatchMode"
-          :selected-ids="selectedIds"
-          :selected-category-ids="selectedCategoryIds"
+          @toggle="sidebarOpen = !sidebarOpen"
+          @select="handleSelectCategory"
+          @toggle-category-selection="handleToggleCategorySelection"
+          @add-subcategory="handleAddSubcategory"
+          @add-bookmark="handleAddBookmarkToCategory"
           @edit-category="handleEditCategory"
           @delete-category="handleDeleteCategory"
-          @edit-bookmark="handleEditBookmark"
-          @delete-bookmark="handleDeleteBookmark"
-          @reorder-bookmarks="handleReorderBookmarks"
-          @toggle-selection="handleToggleSelection"
-          @toggle-category-selection="handleToggleCategorySelection"
         />
+        
+        <!-- Bookmarks Content -->
+        <div class="bookmarks-area">
+          <template v-if="displayedCategories.length > 0">
+            <CategorySection
+              v-for="category in displayedCategories"
+              :key="category.id"
+              :category="category"
+              :bookmarks="bookmarksByCategory[category.id] || []"
+              :is-edit-mode="isEditMode"
+              :is-batch-mode="isBatchMode"
+              :selected-ids="selectedIds"
+              :selected-category-ids="selectedCategoryIds"
+              @edit-category="handleEditCategory"
+              @delete-category="handleDeleteCategory"
+              @edit-bookmark="handleEditBookmark"
+              @delete-bookmark="handleDeleteBookmark"
+              @reorder-bookmarks="handleReorderBookmarks"
+              @toggle-selection="handleToggleSelection"
+              @toggle-category-selection="handleToggleCategorySelection"
+            />
+          </template>
+          <div v-else class="empty-state">
+            暂无可用分类，请先创建分类
+          </div>
+        </div>
       </div>
     </main>
     
@@ -166,6 +209,7 @@
     <!-- Modals -->
     <LoginModal ref="loginModal" />
     <BookmarkDialog ref="bookmarkDialog" />
+    <CategoryDialog ref="categoryDialog" />
     <ConfirmDialog ref="confirmDialog" />
     <PromptDialog ref="promptDialog" />
     <FooterEditDialog ref="footerEditDialog" />
@@ -206,21 +250,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { useAuth } from './composables/useAuth'
 import { useBookmarks } from './composables/useBookmarks'
 import { useBatchOperations } from './composables/useBatchOperations'
 import { useTheme } from './composables/useTheme'
 import { useSettings } from './composables/useSettings'
 import { useToast } from './composables/useToast'
+import { buildCategoryTree, getCategoryPath } from './utils/categoryTree'
 import SearchBar from './components/SearchBar.vue'
-import CategoryButtons from './components/CategoryButtons.vue'
+import CategorySidebar from './components/CategorySidebar.vue'
 import CategorySection from './components/CategorySection.vue'
 import FloatingButtons from './components/FloatingButtons.vue'
 import EditModeToolbar from './components/EditModeToolbar.vue'
 import SettingsPage from './components/SettingsPage.vue'
 import LoginModal from './components/LoginModal.vue'
 import BookmarkDialog from './components/BookmarkDialog.vue'
+import CategoryDialog from './components/CategoryDialog.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import PromptDialog from './components/PromptDialog.vue'
 import FooterEditDialog from './components/FooterEditDialog.vue'
@@ -271,6 +317,7 @@ const showMobileMenu = ref(false)
 const emptyCategoryCount = ref(0)
 const loginModal = ref(null)
 const bookmarkDialog = ref(null)
+const categoryDialog = ref(null)
 const confirmDialog = ref(null)
 const promptDialog = ref(null)
 const footerEditDialog = ref(null)
@@ -279,8 +326,173 @@ const batchOperationDialog = ref(null)
 const settingsPage = ref(null)
 const toast = ref(null)
 
+const ALL_CATEGORIES_ID = 'all'
+const SCROLL_OFFSET = 140
+const PROGRAMMATIC_SCROLL_TIMEOUT = 600
+let scrollResetTimer = null
+
+const isDesktop = ref(typeof window !== 'undefined' ? window.innerWidth >= 1025 : true)
+const sidebarOpen = ref(isDesktop.value)
+const selectedCategoryId = ref(ALL_CATEGORIES_ID)
+const isScrollingProgrammatically = ref(false)
+
 const selectedIds = computed(() => getSelectedIds())
 const selectedCategoryIds = computed(() => getSelectedCategoryIds())
+
+const bookmarkCountByCategory = computed(() => {
+  const counts = {}
+  categories.value.forEach(category => {
+    counts[category.id] = bookmarksByCategory.value[category.id]?.length || 0
+  })
+  return counts
+})
+
+const totalBookmarkCount = computed(() => {
+  return categories.value.reduce((total, category) => {
+    return total + (bookmarkCountByCategory.value[category.id] || 0)
+  }, 0)
+})
+
+const displayedCategories = computed(() => categories.value)
+
+watch(categories, (newCategories) => {
+  if (!newCategories.length) {
+    selectedCategoryId.value = ALL_CATEGORIES_ID
+    return
+  }
+  // 如果当前选中的分类已被删除，回到"全部"
+  if (selectedCategoryId.value !== ALL_CATEGORIES_ID && !newCategories.some(category => category.id === selectedCategoryId.value)) {
+    selectedCategoryId.value = ALL_CATEGORIES_ID
+  }
+
+  nextTick(() => {
+    updateActiveCategoryFromScroll()
+  })
+}, { immediate: true })
+
+watch([showSearch, isEditMode, isBatchMode, isAuthenticated], () => {
+  if (typeof window === 'undefined') return
+  nextTick(() => {
+    updateLayoutOffsets()
+  })
+})
+
+const setProgrammaticScroll = () => {
+  isScrollingProgrammatically.value = true
+  if (scrollResetTimer) clearTimeout(scrollResetTimer)
+  scrollResetTimer = setTimeout(() => {
+    isScrollingProgrammatically.value = false
+  }, PROGRAMMATIC_SCROLL_TIMEOUT)
+}
+
+const getScrollOffset = () => {
+  if (typeof window === 'undefined') return SCROLL_OFFSET
+  const header = document.querySelector('.app-header')
+  return header ? header.offsetHeight + 24 : SCROLL_OFFSET
+}
+
+const scrollToTop = () => {
+  if (typeof window === 'undefined') return
+  setProgrammaticScroll()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const scrollToCategory = (categoryId) => {
+  if (typeof window === 'undefined') return
+  const categoryElement = document.getElementById(`category-${categoryId}`)
+  if (!categoryElement) return
+
+  const offset = getScrollOffset()
+  const elementTop = categoryElement.getBoundingClientRect().top + window.pageYOffset
+  const targetTop = elementTop - offset
+
+  setProgrammaticScroll()
+  window.scrollTo({ top: targetTop, behavior: 'smooth' })
+}
+
+function updateActiveCategoryFromScroll() {
+  if (typeof window === 'undefined') return
+  if (isScrollingProgrammatically.value) return
+  if (!categories.value.length) return
+
+  const scrollY = window.scrollY || document.documentElement.scrollTop || 0
+  if (scrollY <= 80) {
+    if (selectedCategoryId.value !== ALL_CATEGORIES_ID) {
+      selectedCategoryId.value = ALL_CATEGORIES_ID
+    }
+    return
+  }
+
+  const offset = getScrollOffset()
+  let activeId = null
+
+  for (const category of categories.value) {
+    const element = document.getElementById(`category-${category.id}`)
+    if (!element) continue
+    const rect = element.getBoundingClientRect()
+
+    if (rect.top - offset <= 0) {
+      activeId = category.id
+    } else {
+      if (activeId === null) {
+        activeId = category.id
+      }
+      break
+    }
+  }
+
+  if (activeId === null && categories.value.length) {
+    activeId = categories.value[categories.value.length - 1].id
+  }
+
+  if (activeId !== null && selectedCategoryId.value !== activeId) {
+    selectedCategoryId.value = activeId
+  }
+}
+
+const handleSelectCategory = (categoryId) => {
+  selectedCategoryId.value = categoryId
+  if (!isDesktop.value) {
+    sidebarOpen.value = false
+  }
+
+  if (categoryId === ALL_CATEGORIES_ID) {
+    scrollToTop()
+  } else {
+    setTimeout(() => scrollToCategory(categoryId), 100)
+  }
+}
+
+const updateLayoutOffsets = () => {
+  if (typeof window === 'undefined') return
+  const header = document.querySelector('.app-header')
+  const headerHeight = header?.offsetHeight ?? 0
+  const root = document.documentElement
+  if (!root) return
+
+  root.style.setProperty('--app-header-height', `${headerHeight}px`)
+
+  const availableHeight = Math.max(window.innerHeight - headerHeight, 0)
+  root.style.setProperty('--app-sidebar-available-height', `${availableHeight}px`)
+}
+
+const handleResize = () => {
+  if (typeof window === 'undefined') return
+  const wasDesktop = isDesktop.value
+  isDesktop.value = window.innerWidth >= 1025
+  
+  if (!wasDesktop && isDesktop.value) {
+    sidebarOpen.value = true
+  } else if (wasDesktop && !isDesktop.value) {
+    sidebarOpen.value = false
+  }
+
+  if (typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => updateLayoutOffsets())
+  } else {
+    updateLayoutOffsets()
+  }
+}
 
 const handleSettingsTabChange = (tab) => {
   setActiveSettingsTab(tab)
@@ -332,9 +544,37 @@ onMounted(async () => {
   }
   document.addEventListener('click', handleClickOutside)
   
+  // 监听窗口滚动，更新活动分类
+  let scrollTimeout = null
+  const handleScroll = () => {
+    if (scrollTimeout) clearTimeout(scrollTimeout)
+    scrollTimeout = setTimeout(() => {
+      updateActiveCategoryFromScroll()
+    }, 100)
+  }
+  window.addEventListener('scroll', handleScroll, { passive: true })
+  
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize)
+  handleResize()
+  
   // 清理事件监听
   onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    window.removeEventListener('scroll', handleScroll)
+    window.removeEventListener('resize', handleResize)
+    if (scrollResetTimer) clearTimeout(scrollResetTimer)
+    if (scrollTimeout) clearTimeout(scrollTimeout)
+  })
+  
+  // 初始化时调用一次滚动检测
+  nextTick(() => {
+    updateActiveCategoryFromScroll()
+  })
+  
+  // 初始化布局偏移量
+  nextTick(() => {
+    updateLayoutOffsets()
   })
 })
 
@@ -438,33 +678,62 @@ watch([categories, bookmarks], async () => {
   }
 })
 
-const handleAddCategory = async () => {
-  const name = await promptDialog.value.open('新建分类', '', '请输入分类名称')
-  if (name) {
-    const result = await addCategory(name)
-    if (result.success) {
-      toastSuccess('分类添加成功')
-    } else {
-      toastError(result.error || '添加分类失败')
-    }
+const handleAddCategory = async (parentId = null) => {
+  const result = await categoryDialog.value.open(null, parentId)
+  if (result && result.success) {
+    toastSuccess('分类添加成功')
+  } else if (result && !result.success) {
+    toastError(result.error || '添加分类失败')
   }
 }
 
-const handleEditCategory = async (category) => {
-  const name = await promptDialog.value.open('编辑分类', category.name, '请输入新的分类名称')
-  if (name && name !== category.name) {
-    const result = await updateCategory(category.id, name)
-    if (result.success) {
-      toastSuccess('分类已更新')
-    } else {
-      toastError(result.error || '更新分类失败')
+const handleAddSubcategory = async (parentCategory) => {
+  await handleAddCategory(parentCategory.id)
+}
+
+const handleAddBookmarkToCategory = (categoryId) => {
+  bookmarkDialog.value.open(null, { categoryId })
+}
+
+// Get current context category ID (for adding bookmarks with proper default)
+const getCurrentContextCategoryId = () => {
+  // If a specific category is selected (not "all"), attempt to use it
+  if (selectedCategoryId.value !== ALL_CATEGORIES_ID && selectedCategoryId.value !== null && selectedCategoryId.value !== undefined) {
+    if (typeof selectedCategoryId.value === 'number') {
+      return selectedCategoryId.value
     }
+    const parsed = Number.parseInt(selectedCategoryId.value, 10)
+    if (Number.isInteger(parsed)) {
+      return parsed
+    }
+  }
+  // Otherwise return null to use the first category
+  return null
+}
+
+// 获取分类的完整路径显示名称
+const getCategoryDisplayName = (category) => {
+  if (!category || !categories.value.length) {
+    return category?.name || ''
+  }
+  const { map } = buildCategoryTree(categories.value)
+  const path = getCategoryPath(category.id, map)
+  return path.map(item => item.name).join('/')
+}
+
+const handleEditCategory = async (category) => {
+  const result = await categoryDialog.value.open(category)
+  if (result && result.success) {
+    toastSuccess('分类已更新')
+  } else if (result && !result.success) {
+    toastError(result.error || '更新分类失败')
   }
 }
 
 const handleDeleteCategory = async (category) => {
+  const displayName = getCategoryDisplayName(category)
   const confirmed = await confirmDialog.value.open(
-    `确定要删除分类"${category.name}"吗？该分类下的所有书签也将被删除。`,
+    `确定要删除分类"${displayName}"吗？该分类下的所有书签也将被删除。`,
     '删除分类'
   )
   if (confirmed) {
@@ -644,7 +913,12 @@ const handleEditFooter = async () => {
 }
 
 const handleAddBookmark = () => {
-  bookmarkDialog.value.open()
+  const currentCategoryId = getCurrentContextCategoryId()
+  if (Number.isInteger(currentCategoryId)) {
+    bookmarkDialog.value.open(null, { categoryId: currentCategoryId })
+  } else {
+    bookmarkDialog.value.open()
+  }
 }
 
 const handleBatchDeleteCategories = async () => {

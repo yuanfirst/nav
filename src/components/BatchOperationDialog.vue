@@ -9,8 +9,8 @@
             <label>选择目标分类</label>
             <select v-model="selectedCategoryId">
               <option value="">请选择分类</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
+              <option v-for="cat in categoryOptions" :key="cat.id" :value="cat.id">
+                {{ cat.displayName }}
               </option>
             </select>
           </div>
@@ -70,6 +70,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useBookmarks } from '../composables/useBookmarks'
+import { buildCategoryTree, getCategoryPath } from '../utils/categoryTree'
 
 const { categories } = useBookmarks()
 
@@ -80,6 +81,17 @@ const count = ref(0)
 const selectedCategoryId = ref('')
 const privateOption = ref('private')
 let resolvePromise = null
+
+const categoryOptions = computed(() => {
+  if (!categories.value.length) {
+    return []
+  }
+  const { flatList, map } = buildCategoryTree(categories.value)
+  return flatList.map(cat => ({
+    id: cat.id,
+    displayName: getCategoryPath(cat.id, map).map(item => item.name).join('/')
+  }))
+})
 
 const isDisabled = computed(() => {
   if (operationType.value === 'move') {

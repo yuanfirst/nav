@@ -28,7 +28,14 @@
     </div>
     
     <div class="card-header">
+      <LetterIcon 
+        v-if="showLetterIcon"
+        :text="bookmark.name"
+        :size="40"
+        class="card-icon"
+      />
       <img 
+        v-else
         :src="iconUrl" 
         :alt="bookmark.name"
         class="card-icon"
@@ -36,13 +43,13 @@
         decoding="async"
         @error="handleIconError"
       >
-      <h4 class="card-title">{{ bookmark.name }}</h4>
+      <h4 class="card-title">
+        <HighlightText :text="bookmark.name" :query="searchQuery" />
+      </h4>
     </div>
     
-    <p class="card-url">{{ displayUrl }}</p>
-    
-    <p v-if="bookmark.description" class="card-description">
-      {{ bookmark.description }}
+    <p class="card-description">
+      <HighlightText :text="bookmark.description || displayUrl" :query="searchQuery" />
     </p>
     
     <div v-if="bookmark.is_private" class="private-badge">
@@ -79,6 +86,11 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useBookmarks } from '../composables/useBookmarks'
+import HighlightText from './HighlightText.vue'
+import LetterIcon from './LetterIcon.vue'
+
+const { searchQuery } = useBookmarks()
 
 const props = defineProps({
   bookmark: {
@@ -113,31 +125,50 @@ const emit = defineEmits([
 ])
 
 const iconError = ref(false)
+const iconSourceIndex = ref(0) // 当前尝试的图标源索引
 const isDragging = ref(false)
 const isDragOver = ref(false)
 const dropPosition = ref('after')
 let dragPreviewEl = null
 
-const iconUrl = computed(() => {
-  // 默认 SVG 图标
-  const defaultIcon = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Cpath d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"%3E%3C/path%3E%3Cpath d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"%3E%3C/path%3E%3C/svg%3E'
-  
-  if (iconError.value) {
-    return defaultIcon
+// 多个 favicon 源，按优先级排序
+const faviconSources = computed(() => {
+  try {
+    const url = new URL(props.bookmark.url)
+    const domain = url.hostname
+    return [
+      // 1. Google Favicon Service (最稳定)
+      `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+      // 2. DuckDuckGo
+      `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+      // 3. Icon Horse
+      `https://icon.horse/icon/${domain}`,
+      // 4. 直接从网站获取
+      `${url.origin}/favicon.ico`,
+    ]
+  } catch {
+    return []
   }
-  
+})
+
+// 是否显示字母图标（所有源都失败时）
+const showLetterIcon = computed(() => {
+  return iconError.value && iconSourceIndex.value >= faviconSources.value.length
+})
+
+const iconUrl = computed(() => {
   // 如果有自定义图标URL，使用自定义图标
   if (props.bookmark.icon && props.bookmark.icon.trim()) {
     return props.bookmark.icon
   }
   
-  // 使用 faviconextractor.com 服务（国内访问友好）
-  try {
-    const url = new URL(props.bookmark.url)
-    return `https://www.faviconextractor.com/favicon/${url.hostname}`
-  } catch {
-    return defaultIcon
+  // 尝试使用多个 favicon 源
+  if (faviconSources.value.length > 0 && iconSourceIndex.value < faviconSources.value.length) {
+    return faviconSources.value[iconSourceIndex.value]
   }
+  
+  // 所有源都失败，返回空（将显示字母图标）
+  return ''
 })
 
 const displayUrl = computed(() => {
@@ -150,7 +181,14 @@ const displayUrl = computed(() => {
 })
 
 const handleIconError = () => {
-  iconError.value = true
+  // 尝试下一个图标源
+  if (iconSourceIndex.value < faviconSources.value.length - 1) {
+    iconSourceIndex.value++
+    iconError.value = false // 重置错误状态，尝试新的源
+  } else {
+    // 所有源都失败，显示字母图标
+    iconError.value = true
+  }
 }
 
 const handleClick = () => {

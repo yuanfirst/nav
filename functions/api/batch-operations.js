@@ -14,10 +14,41 @@ export async function onRequestPost(context) {
             headers: { 'Content-Type': 'application/json' }
           });
         }
-        const placeholders = bookmarkIds.map(() => '?').join(',');
-        await env.DB.prepare(
-          `DELETE FROM bookmarks WHERE id IN (${placeholders})`
-        ).bind(...bookmarkIds).run();
+        
+        // Normalize and validate IDs (allow numeric strings)
+        const normalizedIds = Array.from(new Set(
+          bookmarkIds
+            .map(id => (typeof id === 'number' ? id : Number.parseInt(id, 10)))
+            .filter(id => Number.isInteger(id) && id > 0)
+        ));
+        
+        if (normalizedIds.length === 0) {
+          return new Response(JSON.stringify({ error: 'No valid bookmark IDs provided' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Process in smaller batches to avoid SQL parameter limits
+        const batchSize = 100;
+        for (let i = 0; i < normalizedIds.length; i += batchSize) {
+          const batch = normalizedIds.slice(i, i + batchSize);
+          const placeholders = batch.map(() => '?').join(',');
+          try {
+            await env.DB.prepare(
+              `DELETE FROM bookmarks WHERE id IN (${placeholders})`
+            ).bind(...batch).run();
+          } catch (error) {
+            console.error('Batch delete error:', error);
+            return new Response(JSON.stringify({ 
+              error: `Failed to delete bookmarks: ${error.message}`,
+              details: { batch: i / batchSize + 1, totalBatches: Math.ceil(normalizedIds.length / batchSize) }
+            }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+        }
         break;
         
       case 'delete-categories':
