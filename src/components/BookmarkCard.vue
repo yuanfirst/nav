@@ -137,13 +137,15 @@ const faviconSources = computed(() => {
     const url = new URL(props.bookmark.url)
     const domain = url.hostname
     return [
-      // 1. Google Favicon Service (最稳定)
+      // 1. FaviconExtractor (主要源)
+      `https://www.faviconextractor.com/favicon/${domain}`,
+      // 2. Google Favicon Service
       `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
-      // 2. DuckDuckGo
+      // 3. DuckDuckGo
       `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-      // 3. Icon Horse
+      // 4. Icon Horse
       `https://icon.horse/icon/${domain}`,
-      // 4. 直接从网站获取
+      // 5. 直接从网站获取
       `${url.origin}/favicon.ico`,
     ]
   } catch {
