@@ -28,8 +28,6 @@
             </div>
           </div>
           
-          <div class="divider"></div>
-          
           <div class="import-section">
             <h4>导入书签</h4>
             <div class="import-notice">
@@ -652,11 +650,6 @@ defineExpose({
   stroke-width: 2;
 }
 
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 1.5rem 0;
-}
 
 .import-status {
   margin-top: 0.75rem;
@@ -816,7 +809,6 @@ defineExpose({
 .import-details {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border);
 }
 
 .btn-toggle-details {
@@ -862,12 +854,7 @@ defineExpose({
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  border-bottom: 1px solid var(--border);
   font-size: 0.875rem;
-}
-
-.detail-item:last-child {
-  border-bottom: none;
 }
 
 .item-type {

@@ -134,8 +134,10 @@ const handleDeleteCategory = (category) => emit('delete-category', category)
 <style scoped>
 .category-sidebar {
   width: min(80vw, 320px);
-  background: var(--bg);
-  border-right: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0 var(--radius) var(--radius) 0;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -154,6 +156,8 @@ const handleDeleteCategory = (category) => emit('delete-category', category)
 }
 
 html.dark .category-sidebar {
+  background: rgba(15, 23, 42, 0.8);
+  border-right-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
@@ -168,7 +172,6 @@ html.dark .category-sidebar {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
 }
 
 .sidebar-title {
@@ -237,7 +240,6 @@ html.dark .category-item.active {
 }
 
 .category-item.category-all {
-  border-bottom: 1px solid var(--border);
   padding-bottom: 0.35rem;
   margin-bottom: 0.35rem;
 }

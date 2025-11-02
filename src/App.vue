@@ -223,6 +223,8 @@
       :is-dark="isDark"
       :bookmarks="bookmarks"
       :show-search="showSearch"
+      :random-wallpaper="randomWallpaper"
+      :wallpaper-api="wallpaperApi"
       :hide-empty-categories="hideEmptyCategories"
       :public-mode="publicMode"
       :custom-title="customTitle"
@@ -234,6 +236,8 @@
       @toggle-search="toggleSearch"
       @toggle-hide-empty="toggleHideEmptyCategories"
       @toggle-public-mode="togglePublicMode"
+      @toggle-random-wallpaper="toggleRandomWallpaper"
+      @update-wallpaper-api="updateWallpaperApi"
       @update-title="updateCustomTitle"
       @update-footer="updateFooterContent"
       @editTitle="handleEditTitle"
@@ -293,7 +297,7 @@ const {
   cleanupEmptyCategories
 } = useBookmarks()
 const { themeMode, isDark, setThemeMode, toggleTheme, loadThemeFromDB } = useTheme()
-const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, publicMode, toggleSearch, toggleHideEmptyCategories, togglePublicMode, updateCustomTitle, updateFooterContent, setActiveSettingsTab, loadSettingsFromDB } = useSettings()
+const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, publicMode, randomWallpaper, wallpaperApi, toggleSearch, toggleHideEmptyCategories, togglePublicMode, updateCustomTitle, updateFooterContent, setActiveSettingsTab, toggleRandomWallpaper, updateWallpaperApi, applyWallpaper, loadSettingsFromDB } = useSettings()
 const { setToastInstance, success: toastSuccess, error: toastError } = useToast()
 const {
   isBatchMode,
@@ -524,6 +528,12 @@ onMounted(async () => {
   // 初始化时加载设置（无论是否登录）
   await loadSettingsFromDB()
   await loadThemeFromDB()
+  
+  // 如果壁纸已启用，应用壁纸
+  if (randomWallpaper.value) {
+    applyWallpaper()
+  }
+  
   loading.value = false
   
   // 初始化 Toast
