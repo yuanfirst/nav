@@ -10,7 +10,6 @@
       <div class="sidebar-header">
         <h3 class="sidebar-title">分类</h3>
         <button
-          v-if="!isDesktop"
           class="sidebar-close"
           type="button"
           @click="$emit('toggle')"
@@ -134,9 +133,10 @@ const handleDeleteCategory = (category) => emit('delete-category', category)
 
 <style scoped>
 .category-sidebar {
-  width: 260px;
+  width: min(80vw, 320px);
   background: var(--bg);
   border-right: 1px solid var(--border);
+  border-radius: 0 var(--radius) var(--radius) 0;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: fixed;
@@ -153,22 +153,8 @@ const handleDeleteCategory = (category) => emit('delete-category', category)
   transform: translateX(0);
 }
 
-.category-sidebar.is-desktop {
-  position: sticky;
-  top: var(--app-header-height, 140px);
-  height: var(--app-sidebar-available-height, calc(100vh - var(--app-header-height, 140px)));
-  max-height: var(--app-sidebar-available-height, calc(100vh - var(--app-header-height, 140px)));
-  box-shadow: none;
-  border-radius: var(--radius);
-  align-self: stretch;
-  left: auto;
-  bottom: auto;
-  z-index: 10;
-  overflow: hidden;
-}
-
-.category-sidebar.is-desktop.is-open {
-  transform: translateX(0);
+html.dark .category-sidebar {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .sidebar-inner {
@@ -366,23 +352,5 @@ html.dark .category-item.active {
   width: 14px;
   height: 14px;
   stroke-width: 2;
-}
-
-@media (min-width: 1025px) {
-  .category-sidebar {
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-
-  .category-sidebar:not(.is-open) {
-    display: none;
-  }
-}
-
-@media (max-width: 1024px) {
-  .category-sidebar {
-    width: min(80vw, 320px);
-    border-radius: 0 var(--radius) var(--radius) 0;
-  }
 }
 </style>

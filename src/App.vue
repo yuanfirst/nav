@@ -71,7 +71,7 @@
       </div>
       
       <div v-if="showSearch" class="header-search">
-        <SearchBar />
+        <SearchBar @scrollToBookmark="handleScrollToBookmark" />
       </div>
       
       <!-- Edit Mode Toolbar -->
@@ -143,9 +143,9 @@
       </div>
       
       <div v-else class="main-layout">
-        <!-- Sidebar Backdrop (Mobile) -->
+        <!-- Sidebar Backdrop -->
         <div 
-          v-if="sidebarOpen && !isDesktop" 
+          v-if="sidebarOpen" 
           class="sidebar-backdrop" 
           @click="sidebarOpen = false"
         ></div>
@@ -332,7 +332,7 @@ const PROGRAMMATIC_SCROLL_TIMEOUT = 600
 let scrollResetTimer = null
 
 const isDesktop = ref(typeof window !== 'undefined' ? window.innerWidth >= 1025 : true)
-const sidebarOpen = ref(isDesktop.value)
+const sidebarOpen = ref(false)
 const selectedCategoryId = ref(ALL_CATEGORIES_ID)
 const isScrollingProgrammatically = ref(false)
 
@@ -452,15 +452,39 @@ function updateActiveCategoryFromScroll() {
 
 const handleSelectCategory = (categoryId) => {
   selectedCategoryId.value = categoryId
-  if (!isDesktop.value) {
-    sidebarOpen.value = false
-  }
+  sidebarOpen.value = false
 
   if (categoryId === ALL_CATEGORIES_ID) {
     scrollToTop()
   } else {
     setTimeout(() => scrollToCategory(categoryId), 100)
   }
+}
+
+const handleScrollToBookmark = (bookmark) => {
+  if (typeof window === 'undefined') return
+  
+  // 先滚动到分类
+  scrollToCategory(bookmark.category_id)
+  
+  // 等待滚动完成后，再滚动到具体的书签
+  setTimeout(() => {
+    const bookmarkElement = document.getElementById(`bookmark-${bookmark.id}`)
+    if (!bookmarkElement) return
+    
+    const offset = getScrollOffset()
+    const elementTop = bookmarkElement.getBoundingClientRect().top + window.pageYOffset
+    const targetTop = elementTop - offset - 20 // 额外留 20px 的间距
+    
+    setProgrammaticScroll()
+    window.scrollTo({ top: targetTop, behavior: 'smooth' })
+    
+    // 高亮显示书签（添加一个临时的高亮效果）
+    bookmarkElement.classList.add('highlight-bookmark')
+    setTimeout(() => {
+      bookmarkElement.classList.remove('highlight-bookmark')
+    }, 2000)
+  }, 500)
 }
 
 const updateLayoutOffsets = () => {
@@ -478,14 +502,7 @@ const updateLayoutOffsets = () => {
 
 const handleResize = () => {
   if (typeof window === 'undefined') return
-  const wasDesktop = isDesktop.value
   isDesktop.value = window.innerWidth >= 1025
-  
-  if (!wasDesktop && isDesktop.value) {
-    sidebarOpen.value = true
-  } else if (wasDesktop && !isDesktop.value) {
-    sidebarOpen.value = false
-  }
 
   if (typeof window.requestAnimationFrame === 'function') {
     window.requestAnimationFrame(() => updateLayoutOffsets())

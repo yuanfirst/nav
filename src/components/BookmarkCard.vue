@@ -1,5 +1,6 @@
 <template>
   <div 
+    :id="`bookmark-${bookmark.id}`"
     class="bookmark-card"
     :class="{
       'selected': isSelected,
