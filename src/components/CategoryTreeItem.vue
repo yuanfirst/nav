@@ -75,6 +75,26 @@
       :style="{ marginLeft: `${Math.max(level * 1.1, 0)}rem` }"
     >
       <button
+        type="button"
+        class="icon-btn-small"
+        title="上移"
+        @click.stop="$emit('reorder-category', { id: category.id, direction: 'up' })"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-btn-small"
+        title="下移"
+        @click.stop="$emit('reorder-category', { id: category.id, direction: 'down' })"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      <button
         v-if="category.depth < 4"
         type="button"
         class="icon-btn-small add-sub-btn"
@@ -142,6 +162,7 @@
         @add-bookmark="$emit('add-bookmark', $event)"
         @edit-category="$emit('edit-category', $event)"
         @delete-category="$emit('delete-category', $event)"
+        @reorder-category="$emit('reorder-category', $event)"
       />
     </ul>
   </li>

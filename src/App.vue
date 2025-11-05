@@ -1,7 +1,7 @@
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'efficient-mode': displayMode === 'efficient' }">
     <!-- Header -->
-    <header class="app-header">
+    <header class="app-header" :class="{ 'efficient-mode': displayMode === 'efficient' }">
       <div class="header-content">
         <div class="header-left">
           <button 
@@ -26,7 +26,7 @@
           登录
         </button>
         
-        <!-- 已登录状态：显示汉堡菜单按钮 -->
+        <!-- 已登录状态：显示操作区 -->
         <template v-else>
           <button class="mobile-menu-btn" @click.stop="showMobileMenu = !showMobileMenu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -48,16 +48,17 @@
               <span>设置</span>
             </button>
             
+            <!-- 仅在非编辑模式下显示“编辑”按钮；编辑模式使用外显“完成”按钮 -->
             <button 
-              class="btn"
-              :class="isEditMode ? 'btn-primary' : 'btn-secondary'"
-              @click="isEditMode = !isEditMode; showMobileMenu = false"
+              v-if="!isEditMode"
+              class="btn btn-secondary"
+              @click="isEditMode = true; showMobileMenu = false"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
-              <span>{{ isEditMode ? '完成' : '编辑' }}</span>
+              <span>编辑</span>
             </button>
             
             <button 
@@ -91,6 +92,7 @@
         @batchEdit="handleBatchEdit"
         @batchDelete="handleBatchDelete"
         @batchDeleteCategories="handleBatchDeleteCategories"
+        @finishEdit="() => { isEditMode = false }"
       />
     </header>
     
@@ -142,7 +144,7 @@
         </button>
       </div>
       
-      <div v-else class="main-layout">
+      <div v-else class="main-layout" :class="{ 'efficient-mode': displayMode === 'efficient' }">
         <!-- Sidebar Backdrop -->
         <div 
           v-if="sidebarOpen" 
@@ -168,10 +170,11 @@
           @add-bookmark="handleAddBookmarkToCategory"
           @edit-category="handleEditCategory"
           @delete-category="handleDeleteCategory"
+          @reorder-category="handleReorderCategory"
         />
         
         <!-- Bookmarks Content -->
-        <div class="bookmarks-area">
+        <div class="bookmarks-area" :class="{ 'efficient-mode': displayMode === 'efficient' }">
           <template v-if="displayedCategories.length > 0">
             <CategorySection
               v-for="category in displayedCategories"
@@ -182,6 +185,7 @@
               :is-batch-mode="isBatchMode"
               :selected-ids="selectedIds"
               :selected-category-ids="selectedCategoryIds"
+              :display-mode="displayMode"
               @edit-category="handleEditCategory"
               @delete-category="handleDeleteCategory"
               @edit-bookmark="handleEditBookmark"
@@ -225,6 +229,7 @@
       :show-search="showSearch"
       :random-wallpaper="randomWallpaper"
       :wallpaper-api="wallpaperApi"
+      :display-mode="displayMode"
       :hide-empty-categories="hideEmptyCategories"
       :public-mode="publicMode"
       :custom-title="customTitle"
@@ -238,6 +243,7 @@
       @toggle-public-mode="togglePublicMode"
       @toggle-random-wallpaper="toggleRandomWallpaper"
       @update-wallpaper-api="updateWallpaperApi"
+      @set-display-mode="setDisplayMode"
       @update-title="updateCustomTitle"
       @update-footer="updateFooterContent"
       @editTitle="handleEditTitle"
@@ -297,7 +303,7 @@ const {
   cleanupEmptyCategories
 } = useBookmarks()
 const { themeMode, isDark, setThemeMode, toggleTheme, loadThemeFromDB } = useTheme()
-const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, publicMode, randomWallpaper, wallpaperApi, toggleSearch, toggleHideEmptyCategories, togglePublicMode, updateCustomTitle, updateFooterContent, setActiveSettingsTab, toggleRandomWallpaper, updateWallpaperApi, applyWallpaper, loadSettingsFromDB } = useSettings()
+const { showSearch, hideEmptyCategories, customTitle, footerContent, activeSettingsTab, publicMode, randomWallpaper, wallpaperApi, displayMode, toggleSearch, toggleHideEmptyCategories, togglePublicMode, updateCustomTitle, updateFooterContent, setActiveSettingsTab, toggleRandomWallpaper, updateWallpaperApi, setDisplayMode, applyWallpaper, loadSettingsFromDB } = useSettings()
 const { setToastInstance, success: toastSuccess, error: toastError } = useToast()
 const {
   isBatchMode,
@@ -967,6 +973,32 @@ const handleBatchDeleteCategories = async () => {
   } else {
     toastError(result.error || '批量删除分类失败')
   }
+}
+
+// 分类排序：同层级上/下移动
+const handleReorderCategory = async ({ id, direction }) => {
+  const category = categories.value.find(c => c.id === id)
+  if (!category) return
+  const parentId = category.parent_id ?? null
+  const siblings = categories.value
+    .filter(c => (c.parent_id ?? null) === parentId)
+    .sort((a, b) => a.position - b.position)
+
+  const index = siblings.findIndex(c => c.id === id)
+  if (index === -1) return
+
+  if (direction === 'up' && index > 0) {
+    const [curr] = siblings.splice(index, 1)
+    siblings.splice(index - 1, 0, curr)
+  } else if (direction === 'down' && index < siblings.length - 1) {
+    const [curr] = siblings.splice(index, 1)
+    siblings.splice(index + 1, 0, curr)
+  } else {
+    return
+  }
+
+  const items = siblings.map((c, i) => ({ id: c.id, position: i }))
+  await reorderItems('categories', items)
 }
 </script>
 

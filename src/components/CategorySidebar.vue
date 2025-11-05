@@ -60,6 +60,7 @@
           @add-bookmark="handleAddBookmark"
           @edit-category="handleEditCategory"
           @delete-category="handleDeleteCategory"
+          @reorder-category="$emit('reorder-category', $event)"
         />
       </ul>
     </div>

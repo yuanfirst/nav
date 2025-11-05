@@ -7,9 +7,11 @@
       'dragging': isDragging,
       'batch-mode': isBatchMode,
       'drop-before': isDragOver && dropPosition === 'before',
-      'drop-after': isDragOver && dropPosition === 'after'
+      'drop-after': isDragOver && dropPosition === 'after',
+      'efficient-mode': displayMode === 'efficient'
     }"
     :draggable="isEditMode && !isBatchMode"
+    :title="hoverTitle"
     :tabindex="isEditMode ? 0 : -1"
     @keydown="handleKeydown"
     @dragstart="handleDragStart"
@@ -109,6 +111,10 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  displayMode: {
+    type: String,
+    default: 'standard'
   }
 })
 
@@ -275,6 +281,19 @@ const handleDrop = (e) => {
     targetId: props.bookmark.id,
     position: dropPosition.value
   })
+
+const hoverTitle = computed(() => {
+  const parts = []
+  parts.push(`名称：${props.bookmark.name || ''}`)
+  parts.push(`地址：${props.bookmark.url || ''}`)
+  if (props.bookmark.description) {
+    parts.push(`描述：${props.bookmark.description}`)
+  }
+  if (props.bookmark.is_private) {
+    parts.push('私密：是')
+  }
+  return parts.join('\n')
+})
   isDragOver.value = false
 }
 

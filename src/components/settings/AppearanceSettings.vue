@@ -54,6 +54,27 @@
       </div>
     </div>
     
+    <!-- 显示模式 -->
+    <div class="form-group">
+      <label class="form-label">显示模式</label>
+      <div class="form-row">
+        <select 
+          class="form-select"
+          :value="displayMode"
+          @change="handleDisplayModeChange"
+        >
+          <option value="standard">📋 标准模式</option>
+          <option value="efficient">⚡ 高效模式</option>
+        </select>
+      </div>
+      <div class="form-hint">
+        {{ 
+          displayMode === 'standard' ? '标准大小的书签卡片' : 
+          '紧凑布局，单页显示更多内容'
+        }}
+      </div>
+    </div>
+    
     <!-- 显示搜索栏 -->
     <div class="form-group">
       <label class="form-label">显示搜索栏</label>
@@ -205,7 +226,8 @@ const props = defineProps({
   customTitle: String,
   footerContent: String,
   randomWallpaper: Boolean,
-  wallpaperApi: String
+  wallpaperApi: String,
+  displayMode: String
 })
 
 const emit = defineEmits([
@@ -216,7 +238,8 @@ const emit = defineEmits([
   'toggleHideEmpty', 
   'togglePublicMode',
   'toggleRandomWallpaper',
-  'updateWallpaperApi'
+  'updateWallpaperApi',
+  'setDisplayMode'
 ])
 
 const showApiDialog = ref(false)
@@ -225,6 +248,10 @@ const error = ref('')
 
 const handleThemeChange = (event) => {
   emit('setThemeMode', event.target.value)
+}
+
+const handleDisplayModeChange = (event) => {
+  emit('setDisplayMode', event.target.value)
 }
 
 const handleConfirm = () => {

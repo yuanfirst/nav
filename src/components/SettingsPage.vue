@@ -84,6 +84,7 @@
               @togglePublicMode="$emit('togglePublicMode')"
               @toggleRandomWallpaper="$emit('toggleRandomWallpaper')"
               @updateWallpaperApi="$emit('updateWallpaperApi', $event)"
+              @setDisplayMode="$emit('setDisplayMode', $event)"
             />
           </div>
         </div>
@@ -147,10 +148,14 @@ const props = defineProps({
   wallpaperApi: {
     type: String,
     default: ''
+  },
+  displayMode: {
+    type: String,
+    default: 'standard'
   }
 })
 
-const emit = defineEmits(['action', 'close', 'setThemeMode', 'toggleSearch', 'toggleHideEmpty', 'togglePublicMode', 'updateTitle', 'updateFooter', 'editTitle', 'editFooter', 'setActiveTab', 'toggleRandomWallpaper', 'updateWallpaperApi'])
+const emit = defineEmits(['action', 'close', 'setThemeMode', 'toggleSearch', 'toggleHideEmpty', 'togglePublicMode', 'updateTitle', 'updateFooter', 'editTitle', 'editFooter', 'setActiveTab', 'toggleRandomWallpaper', 'updateWallpaperApi', 'setDisplayMode'])
 
 const menuItems = ref([
   { id: 'appearance', name: '外观设置', icon: '🎨' },
@@ -185,6 +190,7 @@ const componentProps = computed(() => ({
   customTitle: props.customTitle,
   randomWallpaper: props.randomWallpaper,
   wallpaperApi: props.wallpaperApi,
+  displayMode: props.displayMode,
   footerContent: props.footerContent,
   totalBookmarks: totalBookmarks.value,
   privateBookmarks: privateBookmarks.value,

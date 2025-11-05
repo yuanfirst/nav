@@ -9,6 +9,7 @@ const activeSettingsTab = ref(localStorage.getItem('activeSettingsTab') || 'appe
 const publicMode = ref(localStorage.getItem('publicMode') !== 'false')
 const randomWallpaper = ref(localStorage.getItem('randomWallpaper') === 'true')
 const wallpaperApi = ref(localStorage.getItem('wallpaperApi') || '')
+const displayMode = ref(localStorage.getItem('displayMode') || 'standard')
 
 // 加载标志位，避免循环触发
 const isLoadingFromDB = ref(false)
@@ -59,6 +60,10 @@ export function useSettings() {
           if (data.data.wallpaperApi) {
             wallpaperApi.value = data.data.wallpaperApi
             localStorage.setItem('wallpaperApi', data.data.wallpaperApi)
+          }
+          if (data.data.displayMode) {
+            displayMode.value = data.data.displayMode
+            localStorage.setItem('displayMode', data.data.displayMode)
           }
         }
       }
@@ -163,6 +168,13 @@ export function useSettings() {
     } else if (randomWallpaper.value && !wallpaperApi.value) {
       removeWallpaper()
     }
+  }
+  
+  const setDisplayMode = async (mode) => {
+    displayMode.value = mode
+    localStorage.setItem('displayMode', mode)
+    
+    await saveSettingsToDB({ displayMode: mode })
   }
   
   // 应用随机壁纸
@@ -353,6 +365,24 @@ export function useSettings() {
     }
   })
   
+  watch(displayMode, async (newValue) => {
+    if (!isLoadingFromDB.value) {
+      localStorage.setItem('displayMode', newValue)
+      if (isAuthenticated.value) {
+        try {
+          await apiRequest('/api/settings', {
+            method: 'POST',
+            body: JSON.stringify({ settings: { displayMode: newValue } })
+          })
+        } catch (error) {
+          if (error.message === 'Token expired') {
+            console.warn('Token expired, displayMode not saved to database')
+          }
+        }
+      }
+    }
+  })
+  
   return {
     showSearch,
     hideEmptyCategories,
@@ -362,6 +392,7 @@ export function useSettings() {
     publicMode,
     randomWallpaper,
     wallpaperApi,
+    displayMode,
     toggleSearch,
     toggleHideEmptyCategories,
     updateCustomTitle,
@@ -370,6 +401,7 @@ export function useSettings() {
     togglePublicMode,
     toggleRandomWallpaper,
     updateWallpaperApi,
+    setDisplayMode,
     applyWallpaper,
     removeWallpaper,
     loadSettingsFromDB

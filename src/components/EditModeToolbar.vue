@@ -42,6 +42,15 @@
             </svg>
             <span>批量操作</span>
           </button>
+
+          <div class="toolbar-divider"></div>
+
+          <button class="toolbar-btn finish-btn" @click="$emit('finishEdit')" title="完成编辑">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            <span>完成</span>
+          </button>
         </div>
         
         <div v-else class="toolbar-actions batch-actions">
@@ -142,6 +151,10 @@
           <div class="toolbar-divider"></div>
           
           <button class="toolbar-btn cancel-btn" @click="$emit('toggleBatchMode')" title="退出批量操作">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
             <span>退出</span>
           </button>
         </div>
@@ -184,7 +197,8 @@ defineEmits([
   'batchMove',
   'batchEdit',
   'batchDelete',
-  'batchDeleteCategories'
+  'batchDeleteCategories',
+  'finishEdit'
 ])
 </script>
 
@@ -374,6 +388,16 @@ html.dark .edit-toolbar {
 
 .cancel-btn:hover {
   background: var(--gray-700);
+  transform: translateY(-1px);
+}
+
+.finish-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+.finish-btn:hover {
+  background: var(--primary-dark);
   transform: translateY(-1px);
 }
 

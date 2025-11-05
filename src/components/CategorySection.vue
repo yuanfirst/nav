@@ -1,5 +1,9 @@
 <template>
-  <div :id="`category-${category.id}`" class="category-section">
+  <div 
+    :id="`category-${category.id}`" 
+    class="category-section"
+    :class="{ 'efficient-mode': displayMode === 'efficient' }"
+  >
     <div class="category-header">
       <div v-if="isBatchMode" class="category-checkbox">
         <input 
@@ -27,7 +31,10 @@
     
     <div 
       class="bookmarks-grid"
-      :class="{ 'is-drag-over': isGridDragOver }"
+      :class="{ 
+        'is-drag-over': isGridDragOver,
+        'efficient-mode': displayMode === 'efficient'
+      }"
       @dragover.prevent
       @dragenter.prevent="handleGridDragEnter"
       @dragleave="handleGridDragLeave"
@@ -40,6 +47,7 @@
         :is-edit-mode="isEditMode"
         :is-batch-mode="isBatchMode"
         :is-selected="isBookmarkSelected(bookmark.id)"
+        :display-mode="displayMode"
         @edit="$emit('edit-bookmark', bookmark)"
         @delete="$emit('delete-bookmark', bookmark)"
         @dragstart="handleDragStart"
@@ -87,6 +95,10 @@ const props = defineProps({
   selectedCategoryIds: {
     type: Array,
     default: () => []
+  },
+  displayMode: {
+    type: String,
+    default: 'standard'
   }
 })
 
@@ -135,29 +147,32 @@ const handleDragOverPosition = ({ position }) => {
 
 const handleDrop = ({ draggedId, targetId, position }) => {
   if (!draggedBookmark || draggedId === targetId) return
+
+  // 跨分类：插入到目标卡片前/后，放到当前分类
   if (draggedBookmark.category_id !== props.category.id) {
-    // 暂时仅支持同分类内拖拽
+    const bookmarksCopy = [...props.bookmarks]
+    const targetIndex = bookmarksCopy.findIndex(b => b.id === targetId)
+    if (targetIndex === -1) return
+    const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex
+    // 仅需发出单项变更，App接收后调用 updateBookmark 处理跨分类移动
+    emit('reorder-bookmarks', [{ id: draggedId, position: insertIndex, category_id: props.category.id }])
+    draggedBookmark = null
+    isGridDragOver.value = false
     return
   }
-  
+
+  // 同分类：重排列表
   const bookmarksCopy = [...props.bookmarks]
   const draggedIndex = bookmarksCopy.findIndex(b => b.id === draggedId)
   const targetIndex = bookmarksCopy.findIndex(b => b.id === targetId)
-  
   if (draggedIndex === -1 || targetIndex === -1) return
-  
+
   let insertIndex = position === 'after' ? targetIndex + 1 : targetIndex
   const [removed] = bookmarksCopy.splice(draggedIndex, 1)
-  if (draggedIndex < insertIndex) {
-    insertIndex -= 1
-  }
+  if (draggedIndex < insertIndex) insertIndex -= 1
   bookmarksCopy.splice(insertIndex, 0, removed)
-  
-  const items = bookmarksCopy.map((b, index) => ({
-    id: b.id,
-    position: index
-  }))
-  
+
+  const items = bookmarksCopy.map((b, index) => ({ id: b.id, position: index }))
   emit('reorder-bookmarks', items)
   draggedBookmark = null
 }
@@ -176,20 +191,17 @@ const handleDropOnGrid = (e) => {
   const draggedId = e.dataTransfer.getData('bookmarkId')
   if (!draggedId) return
   const bookmarkId = parseInt(draggedId, 10)
-  
+
+  // 跨分类：放到该分类末尾
   if (draggedBookmark.category_id !== props.category.id) {
-    if (props.bookmarks.length === 0) {
-      emit('reorder-bookmarks', [{
-        id: bookmarkId,
-        position: 0,
-        category_id: props.category.id
-      }])
-      draggedBookmark = null
-      isGridDragOver.value = false
-    }
+    const insertIndex = props.bookmarks.length
+    emit('reorder-bookmarks', [{ id: bookmarkId, position: insertIndex, category_id: props.category.id }])
+    draggedBookmark = null
+    isGridDragOver.value = false
     return
   }
-  
+
+  // 同分类：移到末尾
   const bookmarksCopy = props.bookmarks.filter(b => b.id !== bookmarkId)
   bookmarksCopy.push(draggedBookmark)
   const items = bookmarksCopy.map((b, index) => ({ id: b.id, position: index }))
@@ -228,12 +240,22 @@ const handleKeyboardReorder = ({ id, direction }) => {
   margin-bottom: 2rem;
 }
 
+/* Efficient Mode - Compact Category Section */
+.category-section.efficient-mode {
+  margin-bottom: 1.25rem;
+}
+
 .category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
   gap: 0.75rem;
+}
+
+/* Efficient Mode - Compact Category Header */
+.category-section.efficient-mode .category-header {
+  margin-bottom: 0.625rem;
 }
 
 .category-checkbox {
@@ -254,6 +276,11 @@ const handleKeyboardReorder = ({ id, direction }) => {
   color: var(--text);
 }
 
+/* Efficient Mode - Compact Category Title */
+.category-section.efficient-mode .category-title {
+  font-size: 1.2rem;
+}
+
 .category-actions {
   display: flex;
   gap: 0.5rem;
@@ -266,6 +293,11 @@ const handleKeyboardReorder = ({ id, direction }) => {
   position: relative;
   padding: 0.25rem;
   transition: border 0.2s ease;
+}
+
+.bookmarks-grid.efficient-mode {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.5rem;
 }
 
 .bookmarks-grid.is-drag-over {

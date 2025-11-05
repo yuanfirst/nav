@@ -292,6 +292,11 @@ html.dark .app-header {
   border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Efficient Mode - Compact Header */
+.app-header.efficient-mode {
+  padding: 0.625rem 1rem;
+}
+
 .header-content {
   position: relative;
   max-width: 1400px;
@@ -300,6 +305,11 @@ html.dark .app-header {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+/* Efficient Mode - Compact Header Content */
+.app-header.efficient-mode .header-content {
+  margin-bottom: 0.625rem;
 }
 
 .header-left {
@@ -336,6 +346,11 @@ html.dark .app-header {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
+}
+
+/* Efficient Mode - Compact App Title */
+.app-header.efficient-mode .app-title {
+  font-size: 1.25rem;
 }
 
 /* 汉堡菜单按钮 - 始终显示 */
@@ -405,6 +420,11 @@ html.dark .app-header {
   margin: 1rem auto;
 }
 
+/* Efficient Mode - Compact Header Search */
+.app-header.efficient-mode .header-search {
+  margin: 0.625rem auto;
+}
+
 /* Search Bar */
 .search-bar {
   position: relative;
@@ -415,6 +435,11 @@ html.dark .app-header {
   border-radius: var(--radius);
   padding: 0.75rem 1rem;
   transition: var(--transition);
+}
+
+/* Efficient Mode - Compact Search Bar */
+.app-header.efficient-mode .search-bar {
+  padding: 0.5rem 0.75rem;
 }
 
 .search-bar:focus-within {
@@ -522,6 +547,11 @@ html.dark .app-header {
   min-height: calc(100vh - var(--app-header-height, 140px));
 }
 
+/* Efficient Mode - Compact Main Layout */
+.main-layout.efficient-mode {
+  padding: 0 0.75rem 1.25rem;
+}
+
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
@@ -537,11 +567,23 @@ html.dark .app-header {
   padding-top: 2rem;
 }
 
+/* Efficient Mode - Compact Bookmarks Area */
+.bookmarks-area.efficient-mode {
+  padding-top: 1rem;
+}
+
 @media (min-width: 1025px) {
   .main-layout {
     gap: 2rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+  }
+  
+  /* Efficient Mode - Desktop */
+  .main-layout.efficient-mode {
+    gap: 1.25rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
@@ -551,6 +593,15 @@ html.dark .app-header {
   }
   
   .bookmarks-area {
+    padding-top: 0;
+  }
+  
+  /* Efficient Mode - Mobile */
+  .main-layout.efficient-mode {
+    padding: 0.75rem 0.75rem 1.25rem;
+  }
+  
+  .bookmarks-area.efficient-mode {
     padding-top: 0;
   }
 }
@@ -608,12 +659,22 @@ html.dark .app-header {
   scroll-margin-top: 140px;
 }
 
+/* Efficient Mode - Adjust scroll margin for compact header */
+.app.efficient-mode .category-section {
+  scroll-margin-top: 100px;
+}
+
 .category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
   padding: 0.5rem 0;
+}
+
+/* Efficient Mode - Compact Category Header Padding */
+.app.efficient-mode .category-header {
+  padding: 0.25rem 0;
 }
 
 .category-title {
@@ -631,6 +692,13 @@ html.dark .app-header {
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: var(--transition);
+}
+
+/* Efficient Mode - Compact Category Title */
+.app.efficient-mode .category-title {
+  font-size: 1.25rem;
+  padding: 0.375rem 0.75rem;
+  gap: 0.375rem;
 }
 
 html.dark .category-title {
@@ -687,6 +755,12 @@ html.dark .bookmark-card {
   cursor: move;
 }
 
+/* Efficient Mode - Compact Card Styling */
+.bookmark-card.efficient-mode {
+  padding: 0.625rem;
+  border-radius: var(--radius-sm);
+}
+
 .card-header {
   display: flex;
   align-items: center;
@@ -730,6 +804,28 @@ html.dark .bookmark-card {
   line-height: 1.4;
 }
 
+/* Efficient Mode - Compact Elements */
+.bookmark-card.efficient-mode .card-header {
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+}
+
+.bookmark-card.efficient-mode .card-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.bookmark-card.efficient-mode .card-title {
+  font-size: 0.8125rem;
+}
+
+.bookmark-card.efficient-mode .card-description {
+  font-size: 0.75rem;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  line-height: 1.3;
+}
+
 .private-badge {
   display: inline-flex;
   align-items: center;
@@ -751,6 +847,17 @@ html.dark .private-badge {
   width: 12px;
   height: 12px;
   stroke-width: 2.5;
+}
+
+.bookmark-card.efficient-mode .private-badge {
+  padding: 0.125rem 0.3rem;
+  font-size: 0.625rem;
+  margin-top: 0.3rem;
+}
+
+.bookmark-card.efficient-mode .private-badge svg {
+  width: 10px;
+  height: 10px;
 }
 
 .card-actions {
@@ -1132,12 +1239,23 @@ html.dark .app-footer {
   border-top-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Efficient Mode - Compact Footer */
+.app.efficient-mode .app-footer {
+  padding: 1rem 0.75rem;
+}
+
 .footer-content {
   font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.5;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Efficient Mode - Compact Footer Content */
+.app.efficient-mode .footer-content {
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
 
 .footer-content a {
