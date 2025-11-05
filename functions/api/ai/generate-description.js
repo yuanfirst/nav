@@ -25,7 +25,7 @@ URL: ${url}
 
 Please generate a brief, useful description (1-2 sentences, max 100 words) that explains what this website/resource is about. The description should be clear, informative, and help users understand the purpose or content of the site.
 
-Return only the description text, without any additional formatting or quotes.`
+Language requirement: Respond in the same language as the bookmark name if it is clearly identifiable; otherwise, respond in Simplified Chinese. Return only the description text, without any additional formatting or quotes.`
 
     const response = await callOpenAI(env, {
       path: 'chat/completions',
@@ -35,14 +35,14 @@ Return only the description text, without any additional formatting or quotes.`
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that generates concise bookmark descriptions.'
+            content: 'You are a helpful assistant that generates concise bookmark descriptions. Always reply in the same language as the user/bookmark context; if uncertain, use Simplified Chinese.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
+        temperature: 0.5,
         max_tokens: 150
       }
     })
