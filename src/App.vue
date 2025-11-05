@@ -357,7 +357,10 @@ const totalBookmarkCount = computed(() => {
   }, 0)
 })
 
-const displayedCategories = computed(() => categories.value)
+const displayedCategories = computed(() => {
+  if (!hideEmptyCategories.value) return categories.value
+  return categories.value.filter(cat => (bookmarksByCategory.value[cat.id]?.length || 0) > 0)
+})
 
 watch(categories, (newCategories) => {
   if (!newCategories.length) {
