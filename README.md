@@ -20,6 +20,7 @@
 - 🔔 **更新通知**：版本更新提示功能
 - ⬆️ **回到顶部**：滚动时显示回到顶部按钮
 - ⚡ **边缘部署**：基于 Cloudflare Pages，全球加速
+- 🤖 **AI 智能助手**：智能生成书签描述、智能推荐分类、批量生成描述，支持所有 OpenAI 兼容 API
 
 ## 🛠️ 技术栈
 
@@ -73,8 +74,16 @@
 ADMIN_USERNAME = admin
 ADMIN_PASSWORD = 你的密码
 JWT_SECRET = 至少32位的随机字符串
+
+# AI 功能配置（可选）
+OPENAI_API_KEY = sk-...              # OpenAI API Key 或兼容服务的密钥
+OPENAI_BASE_URL = https://api.openai.com/v1  # API 基础地址（可选）
+OPENAI_MODEL = gpt-4o-mini           # 模型名称（可选）
 ```
 
+**AI 功能说明**：
+- 也可以在设置界面中配置 AI（登录后进入"设置" → "AI 助手"）
+- 支持所有 OpenAI 兼容的 API 服务（包括 Azure OpenAI、本地部署模型等）
 完成！访问你的 Pages URL 即可使用。
 
 

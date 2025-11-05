@@ -1,0 +1,165 @@
+import { ref } from 'vue'
+import { useAuth } from './useAuth'
+
+const aiEnabled = ref(false)
+const aiSource = ref('none')
+const aiApiKey = ref('')
+const aiBaseUrl = ref('')
+
+export function useAI() {
+  const { apiRequest } = useAuth()
+
+  const checkAIAvailability = async () => {
+    try {
+      const response = await apiRequest('/api/ai/status', {
+        method: 'GET'
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        aiEnabled.value = result.enabled
+        aiSource.value = result.source || 'none'
+        return { success: true, enabled: result.enabled, source: result.source }
+      }
+      return { success: false, enabled: false }
+    } catch (error) {
+      aiEnabled.value = false
+      aiSource.value = 'none'
+      return { success: false, enabled: false }
+    }
+  }
+
+  const generateDescription = async (name, url) => {
+    try {
+      const response = await apiRequest('/api/ai/generate-description', {
+        method: 'POST',
+        body: JSON.stringify({ name, url })
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        return { success: true, description: result.description }
+      }
+      return { success: false, error: result.error || '生成失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+
+  const suggestCategory = async (name, url, description, categories) => {
+    try {
+      const response = await apiRequest('/api/ai/suggest-category', {
+        method: 'POST',
+        body: JSON.stringify({ name, url, description, categories })
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        return { success: true, categoryId: result.categoryId, reason: result.reason }
+      }
+      return { success: false, error: result.error || '推荐失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+
+  const batchGenerateDescriptions = async (bookmarks) => {
+    try {
+      const response = await apiRequest('/api/ai/batch-generate-descriptions', {
+        method: 'POST',
+        body: JSON.stringify({ bookmarks })
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        return { 
+          success: true, 
+          results: result.results,
+          successCount: result.successCount,
+          failedCount: result.failedCount
+        }
+      }
+      return { success: false, error: result.error || '批量生成失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+
+  const saveAISettings = async (settings) => {
+    try {
+      const response = await apiRequest('/api/ai/settings', {
+        method: 'POST',
+        body: JSON.stringify(settings)
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        await checkAIAvailability()
+        return { success: true }
+      }
+      return { success: false, error: result.error || '保存失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+
+  const getAISettings = async () => {
+    try {
+      const response = await apiRequest('/api/ai/settings', {
+        method: 'GET'
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        aiApiKey.value = ''
+        aiBaseUrl.value = result.baseUrl || ''
+        if (result.source) {
+          aiSource.value = result.source
+        }
+        return { 
+          success: true, 
+          apiKey: '',
+          baseUrl: result.baseUrl || 'https://api.openai.com/v1',
+          model: result.model || 'gpt-4o-mini',
+          authHeader: result.authHeader || 'Authorization',
+          authPrefix: result.authPrefix !== undefined ? result.authPrefix : 'Bearer ',
+          hasApiKey: !!result.hasApiKey,
+          hasStoredKey: !!result.hasStoredKey,
+          source: result.source || 'none',
+          canEditKey: result.canEditKey !== false
+        }
+      }
+      return { success: false, error: result.error || '获取失败' }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        return { success: false, error: '登录已过期，请重新登录' }
+      }
+      return { success: false, error: '网络错误' }
+    }
+  }
+
+  return {
+    aiEnabled,
+    aiSource,
+    aiApiKey,
+    aiBaseUrl,
+    checkAIAvailability,
+    generateDescription,
+    suggestCategory,
+    batchGenerateDescriptions,
+    saveAISettings,
+    getAISettings
+  }
+}

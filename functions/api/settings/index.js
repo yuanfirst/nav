@@ -10,6 +10,9 @@ export async function onRequestGet(context) {
     // 转换为对象格式
     const settings = {};
     results.forEach(row => {
+      if (row.key?.startsWith('secret_')) {
+        return;
+      }
       settings[row.key] = row.value;
     });
     

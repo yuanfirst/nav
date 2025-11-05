@@ -32,7 +32,25 @@
           
           <div class="form-group">
             <label>描述</label>
-            <input v-model="form.description" type="text" placeholder="可选">
+            <div class="description-input-group">
+              <input v-model="form.description" type="text" placeholder="可选">
+              <button 
+                v-if="aiEnabled"
+                type="button"
+                class="ai-generate-btn" 
+                :disabled="!form.name || !form.url || generatingDesc"
+                @click="handleGenerateDescription"
+                :title="'AI 生成描述'"
+              >
+                <svg v-if="!generatingDesc" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <div v-else class="mini-spinner"></div>
+                {{ generatingDesc ? 'AI生成中...' : 'AI生成' }}
+              </button>
+            </div>
           </div>
           
           <div class="form-group">
@@ -42,12 +60,31 @@
           
           <div class="form-group">
             <label>分类 *</label>
-            <select v-model="form.category_id">
-              <option value="">请选择分类</option>
-              <option v-for="cat in categoryOptions" :key="cat.id" :value="cat.id">
-                {{ cat.displayName }}
-              </option>
-            </select>
+            <div class="category-input-group">
+              <select v-model="form.category_id">
+                <option value="">请选择分类</option>
+                <option v-for="cat in categoryOptions" :key="cat.id" :value="cat.id">
+                  {{ cat.displayName }}
+                </option>
+              </select>
+              <button
+                v-if="aiEnabled && categoryOptions.length"
+                type="button"
+                class="ai-generate-btn"
+                :disabled="suggestingCategory || !form.name || !form.url"
+                @click="handleSuggestCategory"
+                :title="'AI 推荐分类'"
+              >
+                <svg v-if="!suggestingCategory" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M12 20v-6"/>
+                  <path d="M6 14l6-6 6 6"/>
+                  <path d="M4 10h16"/>
+                </svg>
+                <div v-else class="mini-spinner"></div>
+                {{ suggestingCategory ? 'AI 推荐中...' : 'AI 推荐' }}
+              </button>
+            </div>
+            <p v-if="aiSuggestion" class="ai-suggestion">{{ aiSuggestion }}</p>
           </div>
           
           <div class="form-group checkbox-group">
@@ -79,19 +116,24 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useBookmarks } from '../composables/useBookmarks'
 import { useToast } from '../composables/useToast'
+import { useAI } from '../composables/useAI'
 import { buildCategoryTree, getCategoryPath } from '../utils/categoryTree'
 
 const { categories, addBookmark, updateBookmark } = useBookmarks()
 const { success: toastSuccess, error: toastError } = useToast()
+const { aiEnabled, checkAIAvailability, generateDescription, suggestCategory } = useAI()
 
 const show = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
 const error = ref('')
 const fetching = ref(false)
+const generatingDesc = ref(false)
+const suggestingCategory = ref(false)
+const aiSuggestion = ref('')
 
 const form = ref({
   name: '',
@@ -140,11 +182,15 @@ const open = (bookmark = null, options = {}) => {
   }
   
   error.value = ''
+  aiSuggestion.value = ''
   show.value = true
 }
 
 const close = () => {
   show.value = false
+  aiSuggestion.value = ''
+  generatingDesc.value = false
+  suggestingCategory.value = false
 }
 
 const fetchMetadata = async () => {
@@ -186,6 +232,82 @@ const fetchMetadata = async () => {
   }
 }
 
+const handleGenerateDescription = async () => {
+  if (!form.value.name || !form.value.url) {
+    toastError('请先输入名称和 URL')
+    return
+  }
+
+  generatingDesc.value = true
+  error.value = ''
+
+  try {
+    const result = await generateDescription(form.value.name, form.value.url)
+
+    if (result.success && result.description) {
+      form.value.description = result.description
+      toastSuccess('AI 生成描述成功')
+    } else {
+      toastError(result.error || 'AI 生成描述失败')
+    }
+  } catch (err) {
+    toastError('AI 生成描述失败')
+  } finally {
+    generatingDesc.value = false
+  }
+}
+
+const handleSuggestCategory = async () => {
+  if (!form.value.name || !form.value.url) {
+    toastError('请先输入名称和 URL')
+    return
+  }
+
+  if (!categoryOptions.value || categoryOptions.value.length === 0) {
+    toastError('没有可用的分类')
+    return
+  }
+
+  suggestingCategory.value = true
+  aiSuggestion.value = ''
+
+  try {
+    const categoriesForAI = categoryOptions.value.map(cat => ({
+      id: cat.id,
+      name: cat.displayName,
+      path: cat.displayName
+    }))
+
+    const result = await suggestCategory(
+      form.value.name,
+      form.value.url,
+      form.value.description || '',
+      categoriesForAI
+    )
+
+    if (result.success && result.categoryId) {
+      const recommendedId = Number.parseInt(result.categoryId, 10)
+      if (Number.isInteger(recommendedId)) {
+        form.value.category_id = recommendedId
+        const matchedCategory = categoryOptions.value.find(cat => cat.id === recommendedId)
+        const reasonText = result.reason ? `（${result.reason}）` : ''
+        aiSuggestion.value = matchedCategory
+          ? `💡 AI 推荐分类：${matchedCategory.displayName}${reasonText}`
+          : `💡 AI 推荐分类 ID：${recommendedId}${reasonText}`
+        toastSuccess('AI 推荐分类成功')
+      } else {
+        toastError('AI 返回的分类无效')
+      }
+    } else {
+      toastError(result.error || 'AI 推荐分类失败')
+    }
+  } catch (err) {
+    toastError('AI 推荐分类失败')
+  } finally {
+    suggestingCategory.value = false
+  }
+}
+
 const handleSubmit = async () => {
   if (!form.value.name || !form.value.url || !form.value.category_id) {
     error.value = '请填写必填项'
@@ -220,6 +342,10 @@ const handleSubmit = async () => {
   }
 }
 
+onMounted(() => {
+  checkAIAvailability()
+})
+
 defineExpose({
   open,
   close
@@ -231,17 +357,25 @@ defineExpose({
   max-width: 420px;
 }
 
-.url-input-group {
+.url-input-group,
+.description-input-group,
+.category-input-group {
   display: flex;
   gap: 0.5rem;
   align-items: stretch;
 }
 
-.url-input-group input {
+.url-input-group input,
+.description-input-group input {
   flex: 1;
 }
 
-.fetch-btn {
+.category-input-group select {
+  flex: 1;
+}
+
+.fetch-btn,
+.ai-generate-btn {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -257,20 +391,43 @@ defineExpose({
   white-space: nowrap;
 }
 
+.ai-generate-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5568d3 0%, #5e3d85 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
 .fetch-btn:hover:not(:disabled) {
   background: var(--primary-dark);
 }
 
-.fetch-btn:disabled {
+.fetch-btn:disabled,
+.ai-generate-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.fetch-btn svg {
+.fetch-btn svg,
+.ai-generate-btn svg {
   width: 16px;
   height: 16px;
   stroke-width: 2;
   flex-shrink: 0;
+}
+
+.ai-suggestion {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid #667eea;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .mini-spinner {
@@ -338,11 +495,14 @@ defineExpose({
     max-width: 95%;
   }
   
-  .url-input-group {
+  .url-input-group,
+  .description-input-group,
+  .category-input-group {
     flex-direction: column;
   }
   
-  .fetch-btn {
+  .fetch-btn,
+  .ai-generate-btn {
     width: 100%;
     justify-content: center;
   }

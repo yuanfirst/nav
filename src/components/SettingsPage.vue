@@ -96,6 +96,7 @@
 import { ref, computed } from 'vue'
 import AppearanceSettings from './settings/AppearanceSettings.vue'
 import DataSettings from './settings/DataSettings.vue'
+import AISettings from './settings/AISettings.vue'
 import AboutSettings from './settings/AboutSettings.vue'
 
 const props = defineProps({
@@ -154,6 +155,7 @@ const emit = defineEmits(['action', 'close', 'setThemeMode', 'toggleSearch', 'to
 const menuItems = ref([
   { id: 'appearance', name: '外观设置', icon: '🎨' },
   { id: 'data', name: '数据管理', icon: '📊' },
+  { id: 'ai', name: 'AI 助手', icon: '🤖' },
   { id: 'about', name: '关于', icon: 'ℹ️' }
 ])
 
@@ -168,6 +170,7 @@ const currentSettingsComponent = computed(() => {
   const components = {
     appearance: AppearanceSettings,
     data: DataSettings,
+    ai: AISettings,
     about: AboutSettings
   }
   return components[activeTab.value] || AppearanceSettings

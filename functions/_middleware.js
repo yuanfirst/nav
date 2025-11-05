@@ -17,12 +17,13 @@ export async function onRequest(context) {
     return await next();
   }
   
-  // GET请求的bookmarks、categories和settings不需要登录即可访问（只读）
+  // GET请求的bookmarks、categories、settings和AI状态不需要登录即可访问（只读）
   if (request.method === 'GET' && 
       (url.pathname === '/api/bookmarks' || 
        url.pathname === '/api/categories' ||
        url.pathname === '/api/fetch-metadata' ||
-       url.pathname === '/api/settings')) {
+       url.pathname === '/api/settings' ||
+       url.pathname === '/api/ai/status')) {
     return await next();
   }
   
