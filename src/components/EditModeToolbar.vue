@@ -207,17 +207,13 @@ defineEmits([
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: transparent;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: var(--safe-top);
 }
 
 html.dark .edit-toolbar {
-  background: rgba(15, 23, 42, 0.85);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  background: transparent;
 }
 
 .toolbar-content {

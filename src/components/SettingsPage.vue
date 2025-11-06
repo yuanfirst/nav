@@ -10,9 +10,7 @@
             aria-label="关闭设置"
             title="关闭设置"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
+            返回
           </button>
           <h2 id="settings-title">设置</h2>
           <button 
@@ -52,7 +50,6 @@
                 :tabindex="activeTab === item.id ? 0 : -1"
                 :aria-label="`切换到${item.name}`"
               >
-                <div class="menu-icon" aria-hidden="true">{{ item.icon }}</div>
                 <div class="menu-text">{{ item.name }}</div>
               </div>
             </div>
@@ -158,10 +155,10 @@ const props = defineProps({
 const emit = defineEmits(['action', 'close', 'setThemeMode', 'toggleSearch', 'toggleHideEmpty', 'togglePublicMode', 'updateTitle', 'updateFooter', 'editTitle', 'editFooter', 'setActiveTab', 'toggleRandomWallpaper', 'updateWallpaperApi', 'setDisplayMode'])
 
 const menuItems = ref([
-  { id: 'appearance', name: '外观设置', icon: '🎨' },
-  { id: 'data', name: '数据管理', icon: '📊' },
-  { id: 'ai', name: 'AI 助手', icon: '🤖' },
-  { id: 'about', name: '关于', icon: 'ℹ️' }
+  { id: 'appearance', name: '外观设置' },
+  { id: 'data', name: '数据管理' },
+  { id: 'ai', name: 'AI 助手' },
+  { id: 'about', name: '关于' }
 ])
 
 const totalBookmarks = computed(() => props.bookmarks.length)
@@ -348,40 +345,33 @@ defineExpose({
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 3000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  /* 阻止触摸滚动穿透 */
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 .settings-container {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+  background: var(--bg);
+  border-radius: var(--radius);
   width: 100%;
   max-width: 1200px;
   height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  /* 确保容器内的滚动不会影响外部 */
+  border: 1px solid var(--border);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 html.dark .settings-container {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--bg);
+  border-color: var(--border);
 }
 
 /* Header */
@@ -389,56 +379,38 @@ html.dark .settings-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-6) var(--space-8);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  padding: calc(1rem + var(--safe-top)) 1.5rem 1rem 1.5rem;
+  background: transparent;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border);
 }
 
 html.dark .settings-header {
-  background: rgba(15, 23, 42, 0.75);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  border-bottom-color: var(--border);
 }
 
 .back-btn {
-  background: none;
+  background: transparent;
   border: none;
-  padding: 0.5rem;
-  cursor: pointer;
   color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
 }
 
 .back-btn:hover {
-  background: var(--bg-secondary);
-}
-
-.back-btn svg {
-  width: 24px;
-  height: 24px;
-  stroke-width: 2;
+  color: var(--primary);
 }
 
 .settings-header h2 {
   margin: 0;
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
 }
 
-.settings-header h2::before {
-  content: '⚙️';
-  font-size: var(--text-xl);
-}
 
 .menu-toggle {
   background: none;
@@ -476,51 +448,45 @@ html.dark .settings-header {
 
 /* Sidebar */
 .settings-sidebar {
-  width: 320px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
-  padding: var(--space-6) 0;
+  width: 240px;
+  background: transparent;
+  border-right: 1px solid var(--border);
+  padding: 1rem 0;
   overflow-y: auto;
-  transition: var(--transition);
 }
 
 html.dark .settings-sidebar {
-  background: rgba(30, 41, 59, 0.7);
-  border-right-color: rgba(255, 255, 255, 0.1);
+  border-right-color: var(--border);
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: 0 var(--space-4);
+  gap: 0.25rem;
+  padding: 0 1rem;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
+  padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: var(--transition);
-  border-radius: var(--radius);
   color: var(--text-secondary);
   position: relative;
-  font-weight: var(--font-medium);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s ease;
 }
 
 .menu-item:hover {
-  background: var(--bg-tertiary);
   color: var(--text);
-  transform: translateX(4px);
+  background: var(--bg-secondary);
 }
 
 .menu-item.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  color: var(--primary);
+  background: transparent;
 }
 
 .menu-item.active::before {
@@ -529,48 +495,24 @@ html.dark .settings-sidebar {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 4px;
-  height: 20px;
-  background: white;
+  width: 3px;
+  height: 16px;
+  background: var(--primary);
   border-radius: 0 2px 2px 0;
 }
 
-.menu-icon {
-  font-size: var(--text-xl);
-  width: 28px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .menu-text {
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
   flex: 1;
 }
 
 /* Content */
 .settings-content {
   flex: 1;
-  padding: var(--space-8);
+  padding: 2rem;
   overflow-y: auto;
   background: transparent;
-  position: relative;
-  /* 优化滚动体验 */
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-.settings-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
 
 /* Page animation */
@@ -602,9 +544,14 @@ html.dark .settings-sidebar {
   
   .settings-container {
     height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     flex-direction: column;
     max-width: 100%;
+  }
+  
+  .settings-header {
+    padding: calc(1rem + var(--safe-top)) 1.5rem 1rem 1.5rem;
   }
   
   .settings-layout {
@@ -616,26 +563,23 @@ html.dark .settings-sidebar {
     position: absolute;
     top: 0;
     left: 0;
-    width: 320px;
+    width: 240px;
     height: 100%;
     z-index: 10;
     transform: translateX(-100%);
-    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    border-right: 1px solid var(--border);
     border-bottom: none;
-    padding: var(--space-6) 0;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.7);
+    padding: 1rem 0;
+    background: var(--bg);
   }
   
   html.dark .settings-sidebar {
-    background: rgba(30, 41, 59, 0.7);
-    border-right-color: rgba(255, 255, 255, 0.1);
+    background: var(--bg);
+    border-right-color: var(--border);
   }
   
   .settings-sidebar.sidebar-open {
     transform: translateX(0);
-    box-shadow: 0 0 50px var(--shadow-xl);
   }
   
   .sidebar-menu {
@@ -653,7 +597,7 @@ html.dark .settings-sidebar {
   }
   
   .settings-content {
-    padding: var(--space-6);
+    padding: 1.5rem;
     width: 100%;
   }
   

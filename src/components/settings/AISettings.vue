@@ -1,11 +1,7 @@
 <template>
   <div class="settings-section">
-    <div class="section-header">
-      <div class="header-content">
-        <h3>🤖 AI 助手</h3>
-        <p class="section-description">配置 OpenAI 兼容 API，启用 AI 功能来智能生成书签描述、推荐分类等</p>
-      </div>
-    </div>
+    <h2 class="section-title">AI 助手</h2>
+    <p class="section-description">配置 OpenAI 兼容 API，启用 AI 功能来智能生成书签描述、推荐分类等</p>
 
     <div class="settings-group">
       <div class="setting-item">
@@ -63,7 +59,7 @@
             </button>
           </div>
           <p class="setting-note">
-            💡 也可以通过环境变量 <code>OPENAI_API_KEY</code> 配置（优先级更高）
+            也可以通过环境变量 <code>OPENAI_API_KEY</code> 配置（优先级更高）
           </p>
         </div>
 
@@ -184,7 +180,7 @@
     </div>
 
     <div class="ai-features-info">
-      <h4>✨ AI 功能说明</h4>
+      <h4>AI 功能说明</h4>
       <ul class="feature-list">
         <li>
           <strong>智能生成描述：</strong>在添加/编辑书签时，AI 可以根据网站名称和 URL 自动生成描述
@@ -202,7 +198,7 @@
     </div>
 
     <div class="compatibility-info">
-      <h4>🔌 兼容性说明</h4>
+      <h4>兼容性说明</h4>
       <p>支持所有兼容 OpenAI Chat Completions API 格式的服务，包括但不限于：</p>
       <ul class="compatible-services">
         <li>OpenAI（官方）</li>
@@ -315,41 +311,37 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.settings-section {
-  padding: var(--space-6);
-}
-
-.section-header {
-  margin-bottom: var(--space-6);
-}
-
-.header-content h3 {
-  font-size: var(--text-xl);
-  font-weight: var(--font-bold);
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text);
-  margin: 0 0 var(--space-2) 0;
+  margin-bottom: 0.5rem;
 }
 
 .section-description {
   color: var(--text-secondary);
-  font-size: var(--text-sm);
+  font-size: 0.8125rem;
   line-height: 1.5;
-  margin: 0;
+  margin: 0 0 1.5rem 0;
 }
 
 .settings-group {
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  padding: var(--space-5);
-  margin-bottom: var(--space-4);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 0;
 }
 
 .setting-item {
-  margin-bottom: var(--space-5);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .setting-item:last-child {
   margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .setting-header {
@@ -372,19 +364,17 @@ onMounted(async () => {
 
 .setting-input {
   width: 100%;
-  padding: 0.625rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
-  font-size: var(--text-sm);
-  transition: var(--transition);
+  font-size: 0.9375rem;
 }
 
 .setting-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .setting-input:disabled {
@@ -564,10 +554,11 @@ onMounted(async () => {
 
 .ai-features-info,
 .compatibility-info {
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  padding: var(--space-5);
-  margin-bottom: var(--space-4);
+  background: transparent;
+  border-radius: 0;
+  padding: 1.5rem 0;
+  margin-bottom: 0;
+  border-top: 1px solid var(--border);
 }
 
 .ai-features-info h4,

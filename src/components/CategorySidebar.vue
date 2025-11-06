@@ -143,9 +143,9 @@ const handleDeleteCategory = (category) => emit('delete-category', category)
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
+  top: var(--safe-top);
+  bottom: var(--safe-bottom);
+  left: var(--safe-left);
   transform: translateX(-105%);
   z-index: 120;
   display: flex;

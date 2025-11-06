@@ -12,7 +12,7 @@
           class="form-input" 
           readonly
         />
-        <button class="btn btn-secondary" @click="$emit('editTitle')">
+        <button class="text-btn" @click="$emit('editTitle')">
           编辑
         </button>
       </div>
@@ -24,7 +24,7 @@
       <label class="form-label">自定义页脚</label>
       <div class="form-row">
         <div class="footer-preview" v-html="footerContent"></div>
-        <button class="btn btn-secondary" @click="$emit('editFooter')">
+        <button class="text-btn" @click="$emit('editFooter')">
           编辑
         </button>
       </div>
@@ -155,7 +155,7 @@
           class="form-input" 
           readonly
         />
-        <button type="button" class="btn btn-secondary" @click="openDialog">
+        <button type="button" class="text-btn" @click="openDialog">
           编辑
         </button>
       </div>
@@ -204,7 +204,7 @@
             <p v-if="error" class="error-message">{{ error }}</p>
             
             <div class="dialog-buttons">
-              <button class="btn btn-secondary" @click="handleCancel">取消</button>
+              <button class="text-btn" @click="handleCancel">取消</button>
               <button class="btn btn-primary" @click="handleConfirm">确认</button>
             </div>
           </div>
@@ -308,91 +308,50 @@ const openDialog = (e) => {
 }
 
 .section-title {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text);
-  margin-bottom: var(--space-8);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  margin-bottom: 1.5rem;
 }
 
-.section-title::before {
-  content: '🎨';
-  font-size: var(--text-xl);
-}
 
 .form-group {
-  margin-bottom: var(--space-6);
-  padding: var(--space-6);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.form-group::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-light));
-  opacity: 0;
-  transition: var(--transition);
-}
-
-.form-group:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px var(--shadow-md);
-  border-color: var(--primary);
-}
-
-.form-group:hover::before {
-  opacity: 1;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
 }
 
 .form-label {
   display: block;
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  font-size: 0.9375rem;
+  font-weight: 500;
   color: var(--text);
-  margin-bottom: var(--space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  margin-bottom: 0.75rem;
 }
 
-.form-label::before {
-  content: '⚡';
-  font-size: var(--text-base);
-}
 
 .form-row {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .form-input {
   flex: 1;
-  padding: var(--space-3) var(--space-4);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
-  font-size: var(--text-sm);
-  transition: var(--transition);
+  font-size: 0.9375rem;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .form-input:read-only {
@@ -403,26 +362,24 @@ const openDialog = (e) => {
 
 .form-select {
   flex: 1;
-  padding: var(--space-3) var(--space-4);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
-  font-size: var(--text-sm);
-  transition: var(--transition);
+  font-size: 0.9375rem;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
-  background-position: right var(--space-3) center;
+  background-position: right 0.5rem center;
   background-size: 1em;
-  padding-right: 2.5rem;
+  padding-right: 2rem;
 }
 
 .form-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .form-text {
@@ -433,83 +390,59 @@ const openDialog = (e) => {
 }
 
 .form-hint {
-  font-size: var(--text-xs);
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.5;
-  margin-top: var(--space-2);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  margin-top: 0.5rem;
 }
 
-.form-hint::before {
-  content: '💡';
-  font-size: var(--text-xs);
-}
 
 .footer-preview {
   flex: 1;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
+  padding: 0.5rem;
+  background: var(--bg-secondary);
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   max-height: 60px;
   overflow: hidden;
 }
 
 .btn {
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: var(--transition);
   border: none;
-  position: relative;
-  overflow: hidden;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-}
-
-.btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn:hover::before {
-  left: 100%;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
 }
 
 .btn-primary {
   background: var(--primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
   background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
-.btn-secondary {
-  background: var(--bg-tertiary);
+.text-btn {
+  background: transparent;
+  border: none;
   color: var(--text);
-  border: 2px solid var(--border);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
 }
 
-.btn-secondary:hover {
-  background: var(--bg-hover);
-  border-color: var(--primary);
-  transform: translateY(-1px);
+.text-btn:hover {
+  color: var(--primary);
 }
 
 .switch {
@@ -639,6 +572,21 @@ html.dark .api-dialog {
   color: var(--error);
   font-size: 0.875rem;
   margin-top: 0.5rem;
+}
+
+.api-dialog .text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
+}
+
+.api-dialog .text-btn:hover {
+  color: var(--primary);
 }
 
 /* 淡入淡出动画 */

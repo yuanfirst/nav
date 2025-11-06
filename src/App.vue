@@ -3,7 +3,14 @@
     <!-- Header -->
     <header class="app-header" :class="{ 'efficient-mode': displayMode === 'efficient' }">
       <div class="header-content">
+        <!-- 左上角：只显示标题 -->
         <div class="header-left">
+          <h1 class="app-title">{{ customTitle }}</h1>
+        </div>
+        
+        <!-- 右上角：操作按钮 -->
+        <div class="header-right">
+          <!-- 分类汉堡菜单 - 始终在右上角 -->
           <button 
             v-if="categories.length > 0"
             class="sidebar-toggle-btn" 
@@ -14,61 +21,42 @@
               <path d="M3 12h18M3 6h18M3 18h18"/>
             </svg>
           </button>
-          <h1 class="app-title">{{ customTitle }}</h1>
-        </div>
-        
-        <!-- 未登录状态：直接显示登录按钮 -->
-        <button 
-          v-if="!isAuthenticated"
-          class="btn btn-primary"
-          @click="loginModal.open(); showMobileMenu = false"
-        >
-          登录
-        </button>
-        
-        <!-- 已登录状态：显示操作区 -->
-        <template v-else>
-          <button class="mobile-menu-btn" @click.stop="showMobileMenu = !showMobileMenu">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M3 12h18M3 6h18M3 18h18"/>
-            </svg>
+          
+          <!-- 未登录状态：显示登录按钮 -->
+          <button 
+            v-if="!isAuthenticated"
+            class="btn btn-primary"
+            @click="loginModal.open()"
+          >
+            登录
           </button>
           
-          <!-- 桌面端/移动端展开的操作按钮 -->
-          <div class="header-actions" :class="{ 'mobile-menu-open': showMobileMenu }">
-            <!-- Admin Controls in Header -->
+          <!-- 已登录状态：直接显示操作按钮，不需要汉堡菜单 -->
+          <template v-else>
             <button 
-              class="btn btn-secondary"
-              @click="settingsPage.open(); showMobileMenu = false"
+              class="header-text-btn"
+              @click="settingsPage.open()"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
-              </svg>
-              <span>设置</span>
+              设置
             </button>
             
-            <!-- 仅在非编辑模式下显示“编辑”按钮；编辑模式使用外显“完成”按钮 -->
+            <!-- 仅在非编辑模式下显示"编辑"按钮；编辑模式使用外显"完成"按钮 -->
             <button 
               v-if="!isEditMode"
-              class="btn btn-secondary"
-              @click="isEditMode = true; showMobileMenu = false"
+              class="header-text-btn"
+              @click="isEditMode = true"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              <span>编辑</span>
+              编辑
             </button>
             
             <button 
-              class="btn btn-secondary"
-              @click="handleLogout(); showMobileMenu = false"
+              class="header-text-btn"
+              @click="handleLogout()"
             >
               退出
             </button>
-          </div>
-        </template>
+          </template>
+        </div>
       </div>
       
       <div v-if="showSearch" class="header-search">
@@ -323,7 +311,6 @@ const {
 
 const loading = ref(true)
 const isEditMode = ref(false)
-const showMobileMenu = ref(false)
 const emptyCategoryCount = ref(0)
 const loginModal = ref(null)
 const bookmarkDialog = ref(null)
@@ -572,13 +559,6 @@ onMounted(async () => {
     document.title = newTitle
   }, { immediate: true })
   
-  // 点击外部关闭汉堡菜单
-  const handleClickOutside = (event) => {
-    if (showMobileMenu.value && !event.target.closest('.header-content')) {
-      showMobileMenu.value = false
-    }
-  }
-  document.addEventListener('click', handleClickOutside)
   
   // 监听窗口滚动，更新活动分类
   let scrollTimeout = null
@@ -596,7 +576,6 @@ onMounted(async () => {
   
   // 清理事件监听
   onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside)
     window.removeEventListener('scroll', handleScroll)
     window.removeEventListener('resize', handleResize)
     if (scrollResetTimer) clearTimeout(scrollResetTimer)
