@@ -1,6 +1,7 @@
 <template>
   <div 
     :id="`bookmark-${bookmark.id}`"
+    :data-bookmark-id="bookmark.id"
     class="bookmark-card"
     :class="{
       'selected': isSelected,
@@ -229,7 +230,19 @@ const handleDragStart = (e) => {
   
   isDragging.value = true
   e.dataTransfer.effectAllowed = 'move'
-  e.dataTransfer.setData('bookmarkId', props.bookmark.id)
+  e.dataTransfer.setData('bookmarkId', props.bookmark.id.toString())
+  e.dataTransfer.setData('categoryId', props.bookmark.category_id?.toString() || '')
+  // 存储完整的书签数据，用于跨分类拖拽
+  e.dataTransfer.setData('bookmarkData', JSON.stringify({
+    id: props.bookmark.id,
+    category_id: props.bookmark.category_id,
+    name: props.bookmark.name,
+    url: props.bookmark.url,
+    description: props.bookmark.description,
+    icon: props.bookmark.icon,
+    is_private: props.bookmark.is_private,
+    position: props.bookmark.position
+  }))
   emit('dragstart', props.bookmark)
   
   dragPreviewEl = createDragPreview()
@@ -260,9 +273,28 @@ const handleDragEnter = () => {
 
 const handleDragOver = (e) => {
   if (!props.isEditMode || props.isBatchMode) return
+  e.preventDefault()
+  
   const rect = e.currentTarget.getBoundingClientRect()
+  const offsetX = e.clientX - rect.left
   const offsetY = e.clientY - rect.top
-  dropPosition.value = offsetY < rect.height / 2 ? 'before' : 'after'
+  
+  // 对于 Grid 布局，同时考虑水平和垂直位置
+  // 优先判断垂直位置（更直观）
+  const verticalThreshold = rect.height / 2
+  const horizontalThreshold = rect.width / 2
+  
+  // 如果鼠标在卡片上半部分，插入到前面
+  if (offsetY < verticalThreshold) {
+    dropPosition.value = 'before'
+  } else if (offsetY > verticalThreshold) {
+    // 鼠标在下半部分，插入到后面
+    dropPosition.value = 'after'
+  } else {
+    // 中间区域，根据水平位置判断（左侧=前，右侧=后）
+    dropPosition.value = offsetX < horizontalThreshold ? 'before' : 'after'
+  }
+  
   isDragOver.value = true
   emit('dragoverPosition', { id: props.bookmark.id, position: dropPosition.value })
 }
@@ -275,12 +307,31 @@ const handleDragLeave = () => {
 
 const handleDrop = (e) => {
   if (!props.isEditMode || props.isBatchMode) return
+  e.preventDefault()
+  e.stopPropagation()
+  
   const draggedId = e.dataTransfer.getData('bookmarkId')
+  if (!draggedId) return
+  
+  // 从 dataTransfer 读取完整数据
+  let draggedBookmarkData = null
+  const bookmarkDataStr = e.dataTransfer.getData('bookmarkData')
+  if (bookmarkDataStr) {
+    try {
+      draggedBookmarkData = JSON.parse(bookmarkDataStr)
+    } catch (err) {
+      console.error('Failed to parse bookmark data', err)
+    }
+  }
+  
   emit('drop', {
     draggedId: parseInt(draggedId, 10),
     targetId: props.bookmark.id,
-    position: dropPosition.value
+    position: dropPosition.value,
+    draggedBookmark: draggedBookmarkData // 传递解析后的书签数据
   })
+  isDragOver.value = false
+}
 
 const hoverTitle = computed(() => {
   const parts = []
@@ -294,8 +345,6 @@ const hoverTitle = computed(() => {
   }
   return parts.join('\n')
 })
-  isDragOver.value = false
-}
 
 const handleKeydown = (event) => {
   if (!props.isEditMode) return

@@ -30,34 +30,56 @@
     </div>
     
     <div 
+      ref="gridRef"
       class="bookmarks-grid"
       :class="{ 
         'is-drag-over': isGridDragOver,
         'efficient-mode': displayMode === 'efficient'
       }"
-      @dragover.prevent
+      @dragover.prevent="handleGridDragOver"
       @dragenter.prevent="handleGridDragEnter"
       @dragleave="handleGridDragLeave"
       @drop="handleDropOnGrid"
     >
-      <BookmarkCard
-        v-for="bookmark in bookmarks"
-        :key="bookmark.id"
-        :bookmark="bookmark"
-        :is-edit-mode="isEditMode"
-        :is-batch-mode="isBatchMode"
-        :is-selected="isBookmarkSelected(bookmark.id)"
-        :display-mode="displayMode"
-        @edit="$emit('edit-bookmark', bookmark)"
-        @delete="$emit('delete-bookmark', bookmark)"
-        @dragstart="handleDragStart"
-        @dragend="handleDragEnd"
-        @drop="handleDrop"
-        @dragenter="handleCardDragEnter"
-        @dragleave="handleCardDragLeave"
-        @dragoverPosition="handleDragOverPosition"
-        @toggleSelect="handleToggleSelection"
-        @keyboardReorder="handleKeyboardReorder"
+      <template v-for="(bookmark, index) in bookmarks" :key="bookmark.id">
+        <!-- 占位符：显示在拖拽插入位置之前 -->
+        <div
+          v-if="showPlaceholder && placeholderIndex === index && placeholderPosition === 'before' && currentDraggedId !== bookmark.id"
+          class="drag-placeholder"
+          :class="{ 'efficient-mode': displayMode === 'efficient' }"
+        />
+        
+        <BookmarkCard
+          :bookmark="bookmark"
+          :is-edit-mode="isEditMode"
+          :is-batch-mode="isBatchMode"
+          :is-selected="isBookmarkSelected(bookmark.id)"
+          :display-mode="displayMode"
+          @edit="$emit('edit-bookmark', bookmark)"
+          @delete="$emit('delete-bookmark', bookmark)"
+          @dragstart="handleDragStart"
+          @dragend="handleDragEnd"
+          @drop="handleCardDrop"
+          @dragenter="handleCardDragEnter"
+          @dragleave="handleCardDragLeave"
+          @dragoverPosition="handleDragOverPosition"
+          @toggleSelect="handleToggleSelection"
+          @keyboardReorder="handleKeyboardReorder"
+        />
+        
+        <!-- 占位符：显示在拖拽插入位置之后 -->
+        <div
+          v-if="showPlaceholder && placeholderIndex === index && placeholderPosition === 'after' && currentDraggedId !== bookmark.id"
+          class="drag-placeholder"
+          :class="{ 'efficient-mode': displayMode === 'efficient' }"
+        />
+      </template>
+      
+      <!-- 占位符：显示在列表末尾 -->
+      <div
+        v-if="showPlaceholder && placeholderIndex >= bookmarks.length"
+        class="drag-placeholder"
+        :class="{ 'efficient-mode': displayMode === 'efficient' }"
       />
       
       <div v-if="!bookmarks.length" class="empty-state">
@@ -112,9 +134,12 @@ const emit = defineEmits([
   'toggle-category-selection'
 ])
 
-let draggedBookmark = null
+const gridRef = ref(null)
 const isGridDragOver = ref(false)
-const dropIndicatorPosition = ref('after')
+const showPlaceholder = ref(false)
+const placeholderIndex = ref(-1)
+const placeholderPosition = ref('after')
+const currentDraggedId = ref(null)
 
 const selectedSet = computed(() => new Set(props.selectedIds))
 const isBookmarkSelected = (id) => selectedSet.value.has(id)
@@ -125,12 +150,14 @@ const handleToggleCategorySelection = () => {
 }
 
 const handleDragStart = (bookmark) => {
-  draggedBookmark = bookmark
+  currentDraggedId.value = bookmark.id
 }
 
 const handleDragEnd = () => {
-  draggedBookmark = null
+  currentDraggedId.value = null
   isGridDragOver.value = false
+  showPlaceholder.value = false
+  placeholderIndex.value = -1
 }
 
 const handleCardDragEnter = () => {
@@ -138,75 +165,253 @@ const handleCardDragEnter = () => {
 }
 
 const handleCardDragLeave = () => {
-  // no-op for now
+  // 延迟隐藏占位符，避免闪烁
+  setTimeout(() => {
+    if (!isGridDragOver.value) {
+      showPlaceholder.value = false
+    }
+  }, 50)
 }
 
-const handleDragOverPosition = ({ position }) => {
-  dropIndicatorPosition.value = position
+const handleDragOverPosition = ({ id, position }) => {
+  if (currentDraggedId.value === id) return
+  
+  const targetIndex = props.bookmarks.findIndex(b => b.id === id)
+  if (targetIndex === -1) return
+  
+  showPlaceholder.value = true
+  placeholderIndex.value = targetIndex
+  placeholderPosition.value = position
 }
 
-const handleDrop = ({ draggedId, targetId, position }) => {
-  if (!draggedBookmark || draggedId === targetId) return
+// 处理来自 BookmarkCard 的 drop 事件
+const handleCardDrop = (dropInfo) => {
+  if (!dropInfo || !dropInfo.draggedId || !dropInfo.targetId || dropInfo.draggedId === dropInfo.targetId) {
+    showPlaceholder.value = false
+    return
+  }
+  
+  const draggedIdNum = parseInt(dropInfo.draggedId, 10)
+  const targetIdNum = parseInt(dropInfo.targetId, 10)
+  
+  // 使用从 dataTransfer 解析的书签数据，或从当前分类中查找
+  let draggedBookmark = dropInfo.draggedBookmark || props.bookmarks.find(b => b.id === draggedIdNum)
+  
+  // 如果找不到书签数据，这是跨分类拖拽
+  if (!draggedBookmark) {
+    const targetIndex = props.bookmarks.findIndex(b => b.id === targetIdNum)
+    if (targetIndex === -1) {
+      showPlaceholder.value = false
+      return
+    }
+    const insertIndex = dropInfo.position === 'after' ? targetIndex + 1 : targetIndex
+    // 发出跨分类移动请求，App 会处理
+    emit('reorder-bookmarks', [{ id: draggedIdNum, position: insertIndex, category_id: props.category.id }])
+    showPlaceholder.value = false
+    return
+  }
 
-  // 跨分类：插入到目标卡片前/后，放到当前分类
+  // 检查是否是跨分类拖拽
   if (draggedBookmark.category_id !== props.category.id) {
-    const bookmarksCopy = [...props.bookmarks]
-    const targetIndex = bookmarksCopy.findIndex(b => b.id === targetId)
-    if (targetIndex === -1) return
-    const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex
-    // 仅需发出单项变更，App接收后调用 updateBookmark 处理跨分类移动
-    emit('reorder-bookmarks', [{ id: draggedId, position: insertIndex, category_id: props.category.id }])
-    draggedBookmark = null
-    isGridDragOver.value = false
+    const targetIndex = props.bookmarks.findIndex(b => b.id === targetIdNum)
+    if (targetIndex === -1) {
+      showPlaceholder.value = false
+      return
+    }
+    const insertIndex = dropInfo.position === 'after' ? targetIndex + 1 : targetIndex
+    emit('reorder-bookmarks', [{ id: draggedIdNum, position: insertIndex, category_id: props.category.id }])
+    showPlaceholder.value = false
     return
   }
 
   // 同分类：重排列表
   const bookmarksCopy = [...props.bookmarks]
-  const draggedIndex = bookmarksCopy.findIndex(b => b.id === draggedId)
-  const targetIndex = bookmarksCopy.findIndex(b => b.id === targetId)
-  if (draggedIndex === -1 || targetIndex === -1) return
+  const draggedIndex = bookmarksCopy.findIndex(b => b.id === draggedIdNum)
+  const targetIndex = bookmarksCopy.findIndex(b => b.id === targetIdNum)
+  if (draggedIndex === -1 || targetIndex === -1) {
+    showPlaceholder.value = false
+    return
+  }
 
-  let insertIndex = position === 'after' ? targetIndex + 1 : targetIndex
+  let insertIndex = dropInfo.position === 'after' ? targetIndex + 1 : targetIndex
   const [removed] = bookmarksCopy.splice(draggedIndex, 1)
   if (draggedIndex < insertIndex) insertIndex -= 1
   bookmarksCopy.splice(insertIndex, 0, removed)
 
   const items = bookmarksCopy.map((b, index) => ({ id: b.id, position: index }))
   emit('reorder-bookmarks', items)
-  draggedBookmark = null
+  showPlaceholder.value = false
 }
 
-const handleGridDragEnter = () => {
+const handleGridDragEnter = (e) => {
   if (!props.isEditMode) return
   isGridDragOver.value = true
+  // 占位符位置会在 handleGridDragOver 中实时计算
 }
 
-const handleGridDragLeave = () => {
-  isGridDragOver.value = false
+const handleGridDragLeave = (e) => {
+  // 检查是否真的离开了网格区域
+  const relatedTarget = e.relatedTarget
+  if (!gridRef.value?.contains(relatedTarget)) {
+    isGridDragOver.value = false
+    showPlaceholder.value = false
+  }
+}
+
+const handleGridDragOver = (e) => {
+  if (!props.isEditMode) return
+  e.preventDefault()
+  
+  const draggedId = e.dataTransfer?.getData('bookmarkId')
+  if (!draggedId) return
+  
+  // 计算鼠标在网格中的位置，确定占位符位置
+  if (!gridRef.value) return
+  
+  const gridRect = gridRef.value.getBoundingClientRect()
+  const mouseX = e.clientX - gridRect.left
+  const mouseY = e.clientY - gridRect.top
+  
+  // 获取所有可见的卡片（排除正在拖拽的）
+  const cards = Array.from(gridRef.value.querySelectorAll('.bookmark-card:not(.dragging)'))
+  const draggedIdNum = parseInt(draggedId, 10)
+  
+  // 检查是否拖拽的是当前分类的书签
+  const isDraggingFromThisCategory = props.bookmarks.some(b => b.id === draggedIdNum)
+  
+  if (props.bookmarks.length === 0 || (!isDraggingFromThisCategory && props.bookmarks.length === 0)) {
+    // 如果没有其他卡片，占位符显示在位置 0
+    showPlaceholder.value = true
+    placeholderIndex.value = 0
+    placeholderPosition.value = 'after'
+    return
+  }
+  
+  // 找到鼠标位置最近的卡片
+  let closestCard = null
+  let closestDistance = Infinity
+  let closestIndex = -1
+  
+  cards.forEach((card) => {
+    const cardRect = card.getBoundingClientRect()
+    const cardCenterX = cardRect.left + cardRect.width / 2
+    const cardCenterY = cardRect.top + cardRect.height / 2
+    
+    // 计算到鼠标的距离（考虑水平和垂直距离）
+    const distanceX = Math.abs(e.clientX - cardCenterX)
+    const distanceY = Math.abs(e.clientY - cardCenterY)
+    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY)
+    
+    // 检查鼠标是否在卡片区域内
+    const isInCardArea = e.clientX >= cardRect.left &&
+                        e.clientX <= cardRect.right &&
+                        e.clientY >= cardRect.top &&
+                        e.clientY <= cardRect.bottom
+    
+    // 如果鼠标在卡片内，或者距离更近，则更新最近卡片
+    if (isInCardArea || (distance < closestDistance && (!closestCard || distance < closestDistance * 1.5))) {
+      closestCard = card
+      closestDistance = distance
+      // 找到对应的书签索引（使用 props.bookmarks 而不是 visibleBookmarks，因为占位符位置需要考虑原始索引）
+      const bookmarkId = parseInt(card.dataset.bookmarkId, 10)
+      closestIndex = props.bookmarks.findIndex(b => b.id === bookmarkId)
+    }
+  })
+  
+  if (closestCard && closestIndex !== -1) {
+    const cardRect = closestCard.getBoundingClientRect()
+    const cardMiddleY = cardRect.top + cardRect.height / 2
+    const cardMiddleX = cardRect.left + cardRect.width / 2
+    
+    showPlaceholder.value = true
+    
+    placeholderIndex.value = closestIndex
+    
+    // 根据鼠标位置确定插入位置
+    // 优先考虑垂直位置，如果垂直接近则考虑水平位置
+    const verticalDistance = Math.abs(e.clientY - cardMiddleY)
+    
+    if (verticalDistance < cardRect.height * 0.3) {
+      // 鼠标在卡片垂直中间区域，根据水平位置判断
+      placeholderPosition.value = e.clientX < cardMiddleX ? 'before' : 'after'
+    } else {
+      // 鼠标在卡片上下区域，根据垂直位置判断
+      placeholderPosition.value = e.clientY < cardMiddleY ? 'before' : 'after'
+    }
+  } else {
+    // 如果没有找到最近的卡片，放在末尾
+    showPlaceholder.value = true
+    placeholderIndex.value = props.bookmarks.length
+    placeholderPosition.value = 'after'
+  }
 }
 
 const handleDropOnGrid = (e) => {
-  if (!props.isEditMode || !draggedBookmark) return
-  const draggedId = e.dataTransfer.getData('bookmarkId')
-  if (!draggedId) return
+  if (!props.isEditMode) return
+  
+  e.preventDefault()
+  e.stopPropagation()
+  
+  const draggedId = e.dataTransfer?.getData('bookmarkId')
+  if (!draggedId) {
+    showPlaceholder.value = false
+    return
+  }
+  
+  const draggedBookmarkData = e.dataTransfer?.getData('bookmarkData')
+  let draggedBookmark = null
+  if (draggedBookmarkData) {
+    try {
+      draggedBookmark = JSON.parse(draggedBookmarkData)
+    } catch (e) {
+      console.error('Failed to parse dragged bookmark data', e)
+    }
+  }
+  
+  if (!draggedBookmark) {
+    showPlaceholder.value = false
+    return
+  }
+  
   const bookmarkId = parseInt(draggedId, 10)
 
-  // 跨分类：放到该分类末尾
+  // 跨分类：放到该分类的指定位置或末尾
   if (draggedBookmark.category_id !== props.category.id) {
-    const insertIndex = props.bookmarks.length
+    const insertIndex = showPlaceholder.value && placeholderIndex.value !== -1
+      ? placeholderIndex.value
+      : props.bookmarks.length
     emit('reorder-bookmarks', [{ id: bookmarkId, position: insertIndex, category_id: props.category.id }])
-    draggedBookmark = null
+    showPlaceholder.value = false
     isGridDragOver.value = false
     return
   }
 
-  // 同分类：移到末尾
-  const bookmarksCopy = props.bookmarks.filter(b => b.id !== bookmarkId)
-  bookmarksCopy.push(draggedBookmark)
+  // 同分类：根据占位符位置重新排序
+  const bookmarksCopy = [...props.bookmarks]
+  const draggedIndex = bookmarksCopy.findIndex(b => b.id === bookmarkId)
+  
+  if (draggedIndex === -1) {
+    showPlaceholder.value = false
+    return
+  }
+  
+  // 确定插入位置
+  let insertIndex = showPlaceholder.value && placeholderIndex.value !== -1
+    ? placeholderIndex.value
+    : bookmarksCopy.length - 1
+  
+  // 如果插入位置在拖拽项之后，需要调整
+  if (draggedIndex < insertIndex) {
+    insertIndex--
+  }
+  
+  // 移除拖拽项并插入到新位置
+  const [removed] = bookmarksCopy.splice(draggedIndex, 1)
+  bookmarksCopy.splice(insertIndex, 0, removed)
+  
   const items = bookmarksCopy.map((b, index) => ({ id: b.id, position: index }))
   emit('reorder-bookmarks', items)
-  draggedBookmark = null
+  showPlaceholder.value = false
   isGridDragOver.value = false
 }
 
@@ -313,5 +518,38 @@ const handleKeyboardReorder = ({ id, direction }) => {
   border: 2px dashed var(--border);
   border-radius: var(--radius);
   font-size: 0.9rem;
+}
+
+/* 拖拽占位符样式 */
+.drag-placeholder {
+  min-height: 120px;
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius);
+  background: rgba(99, 102, 241, 0.1);
+  transition: all 0.2s ease;
+  animation: placeholderPulse 1.5s ease-in-out infinite;
+}
+
+.drag-placeholder.efficient-mode {
+  min-height: 100px;
+}
+
+@keyframes placeholderPulse {
+  0%, 100% {
+    opacity: 0.6;
+    border-color: var(--primary);
+  }
+  50% {
+    opacity: 1;
+    border-color: var(--primary-dark);
+    background: rgba(99, 102, 241, 0.15);
+  }
+}
+
+/* 拖拽时的卡片样式 */
+.bookmark-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.95);
+  z-index: 1000;
 }
 </style>
