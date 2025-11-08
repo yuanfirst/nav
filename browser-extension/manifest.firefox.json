@@ -1,0 +1,41 @@
+{
+  "manifest_version": 2,
+  "name": "书签管理助手 - Bookmark Manager",
+  "version": "1.6.0",
+  "description": "快速保存网页到你的书签管理系统 | Quick save web pages to your bookmark manager",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "contextMenus",
+    "<all_urls>"
+  ],
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "scripts": ["background.firefox.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "bookmark-manager@example.com",
+      "strict_min_version": "91.0"
+    }
+  }
+}
