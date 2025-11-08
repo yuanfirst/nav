@@ -336,6 +336,10 @@ const handleSubmit = async () => {
   if (result.success) {
     toastSuccess(isEdit.value ? '书签已更新' : '书签已添加')
     close()
+  } else if (result.duplicate) {
+    // 处理重复 URL 的情况
+    error.value = result.error || '该 URL 已存在'
+    toastError(result.error || '该 URL 已存在')
   } else {
     error.value = result.error || '操作失败'
     toastError(error.value)

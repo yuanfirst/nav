@@ -99,11 +99,22 @@ export function useBookmarks() {
       }
       
       const result = await response.json()
+      
+      // 处理重复 URL 的情况
+      if (response.status === 409 && result.duplicate) {
+        return { 
+          success: false, 
+          duplicate: true,
+          error: `该 URL 已存在于"${result.existingBookmark.category_name}"分类中`,
+          existingBookmark: result.existingBookmark
+        }
+      }
+      
       if (result.success) {
         await fetchData()
         return { success: true }
       }
-      return { success: false, error: '添加失败' }
+      return { success: false, error: result.error || '添加失败' }
     } catch (error) {
       return { success: false, error: '网络错误' }
     }
@@ -117,11 +128,22 @@ export function useBookmarks() {
       })
       
       const result = await response.json()
+      
+      // 处理重复 URL 的情况
+      if (response.status === 409 && result.duplicate) {
+        return { 
+          success: false, 
+          duplicate: true,
+          error: `该 URL 已被其他书签使用（位于"${result.existingBookmark.category_name}"分类）`,
+          existingBookmark: result.existingBookmark
+        }
+      }
+      
       if (result.success) {
         await fetchData()
         return { success: true }
       }
-      return { success: false, error: '更新失败' }
+      return { success: false, error: result.error || '更新失败' }
     } catch (error) {
       if (error.message === 'Token expired') {
         return { success: false, error: '登录已过期，请重新登录' }

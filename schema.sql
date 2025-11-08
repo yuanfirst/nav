@@ -41,6 +41,9 @@ ON bookmarks(category_id, position);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_private 
 ON bookmarks(is_private);
 
+CREATE INDEX IF NOT EXISTS idx_bookmarks_url 
+ON bookmarks(url);
+
 CREATE INDEX IF NOT EXISTS idx_categories_position 
 ON categories(position);
 

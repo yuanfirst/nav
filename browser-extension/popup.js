@@ -463,6 +463,12 @@ async function saveBookmark(event) {
       setTimeout(() => {
         window.close();
       }, 1000);
+    } else if (response.status === 409 && result.duplicate) {
+      // 处理重复 URL 的情况
+      const categoryName = result.existingBookmark?.category_name || '未知分类';
+      showStatus(`⚠️ 该 URL 已存在于"${categoryName}"分类中`, 'warning');
+      saveBtn.disabled = false;
+      saveText.textContent = '保存书签';
     } else {
       showStatus(result.error || '保存失败', 'error');
       saveBtn.disabled = false;
