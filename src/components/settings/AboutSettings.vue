@@ -96,6 +96,22 @@
         </div>
       </div>
     </div>
+    
+    <!-- 致谢 -->
+    <div class="form-group">
+      <div class="form-header">
+        <div class="form-content">
+          <div class="form-title">致谢</div>
+          <div class="form-description">
+            项目图标由 
+            <a href="https://www.flaticon.com/authors/mdtaslimuddinsakib" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: underline;">
+              MdTaslimUddinSakib
+            </a>
+            设计
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

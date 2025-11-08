@@ -1,4 +1,4 @@
-# 📚 书签管理系统
+# 📚 Nav
 
 > **完全重构版本** - 数据库改为 D1，原项目在 [back 分支](https://github.com/deerwan/nav/tree/back)
 
@@ -152,7 +152,7 @@ OPENAI_MODEL = gpt-4o-mini           # 模型名称（可选）
 ### 使用方法
 
 - **保存当前页面**：点击扩展图标，确认信息后保存
-- **右键保存**：在页面或链接上右键 → "添加到书签管理系统"
+- **右键保存**：在页面或链接上右键 → "添加书签"
 - **AI 生成描述**：填写标题和 URL 后，点击"🤖 AI生成描述"
 
 ### ⚠️ 关于 Chrome Web Store 上架
@@ -199,5 +199,9 @@ OPENAI_MODEL = gpt-4o-mini           # 模型名称（可选）
 ## 📝 许可证
 
 Apache License 2.0
+
+## 🙏 致谢
+
+- **图标设计**：项目图标由 [MdTaslimUddinSakib](https://www.flaticon.com/authors/mdtaslimuddinsakib) 设计。
 
 Made with ❤️ using Vue 3 and Cloudflare

@@ -174,7 +174,7 @@ function stopTokenCheck() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'save-bookmark',
-    title: '添加到书签管理系统',
+    title: '添加书签',
     contexts: ['page', 'link']
   });
   
