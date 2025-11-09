@@ -1,4 +1,4 @@
-# 📚 Nav
+# 📚 Bookmark Manager
 
 > **完全重构版本** - 数据库改为 D1，原项目在 [back 分支](https://github.com/deerwan/nav/tree/back)
 
@@ -189,7 +189,7 @@ OPENAI_MODEL = gpt-4o-mini           # 模型名称（可选）
     </td>
     <td align="center">
       <strong>支付宝红包码</strong><br>
-      <img src="images/hbm.PNG" alt="支付宝红包码" width="200">
+      <img src="images/hbm.PNG" alt="红包码" width="200">
     </td>
   </tr>
 </table>

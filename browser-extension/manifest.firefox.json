@@ -26,7 +26,7 @@
     }
   },
   "background": {
-    "scripts": ["background.firefox.js"]
+    "scripts": ["background.js"]
   },
   "options_ui": {
     "page": "options.html",
@@ -34,8 +34,15 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "bookmark-manager@example.com",
-      "strict_min_version": "91.0"
+      "id": "bookmark-manager@deerwan.github.io",
+      "strict_min_version": "91.0",
+      "data_collection": {
+        "collects": false
+      },
+      "data_collection_permissions": {
+        "required": ["none"],
+        "description": "此扩展仅在本地存储用户的书签服务器配置和认证令牌，不收集或传输任何个人数据到第三方服务器。"
+      }
     }
   }
 }

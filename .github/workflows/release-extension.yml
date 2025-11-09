@@ -55,25 +55,15 @@ jobs:
           echo "✅ All packages generated successfully"
           ls -lh browser-extension/dist/*.zip
 
-      - name: Upload Chromium extension
-        uses: actions/upload-release-asset@v1
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: |
+            browser-extension/dist/bookmark-manager-chromium.zip
+            browser-extension/dist/bookmark-manager-firefox.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./browser-extension/dist/bookmark-manager-chromium.zip
-          asset_name: bookmark-manager-chromium.zip
-          asset_content_type: application/zip
-
-      - name: Upload Firefox extension
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./browser-extension/dist/bookmark-manager-firefox.zip
-          asset_name: bookmark-manager-firefox.zip
-          asset_content_type: application/zip
 
       - name: Build summary
         run: |
