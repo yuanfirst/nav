@@ -1,4 +1,4 @@
-# 📚 Bookmark Manager
+# 📚 书签管理系统
 
 > **完全重构版本** - 数据库改为 D1，原项目在 [back 分支](https://github.com/deerwan/nav/tree/back)
 
@@ -13,6 +13,7 @@
 - 🔒 **私密书签**：支持设置私密书签，仅登录后可见
 - 🔍 **实时搜索**：按名称、URL 或描述快速搜索书签，支持分类筛选和防抖优化
 - 📥 **导入导出**：支持导出为 JSON/HTML 格式，导入浏览器书签（支持进度显示）
+- 💾 **云端备份**：支持将数据备份到 Cloudflare R2 存储，支持备份列表管理、恢复和自定义备份名称（可选功能）
 - ⚡ **批量操作**：批量移动、批量编辑属性（私密/公开）、批量删除书签和分类
 - 🧹 **清理空分类**：自动检测并清理空分类
 - 📊 **数据统计**：显示书签总数和私密书签统计
@@ -59,6 +60,7 @@
 - **构建工具**：Vite
 - **后端**：Cloudflare Pages Functions
 - **数据库**：Cloudflare D1 (SQLite)
+- **存储**：Cloudflare R2（备份功能，可选）
 - **认证**：JWT Token
 - **样式**：原生 CSS (现代化设计)
 
@@ -70,12 +72,12 @@
 - 点击 `Create database`，名称：`bookmark-db`
 - 进入数据库 > `Console`，复制 `schema.sql` 内容并执行
 
-**数据库迁移**（如果是现有项目升级）：
-- 如需启用多级嵌套分类功能，在 D1 Console 中执行 `migrations/001_add_nested_categories.sql` 中的 SQL 语句
 
 **重要：获取数据库 ID**
 - 创建数据库后，在数据库详情页面可以看到 `Database ID`
-- 复制这个 ID，稍后需要替换到 `wrangler.toml` 文件中
+- 复制这个 ID，替换到 `wrangler.toml` 文件中
+- 将第8行的 `database_id` 替换为你刚创建的数据库 ID
+- 提交并推送到你的 GitHub 仓库
 
 ### 2. 部署 Pages 项目
 - Fork [本仓库](https://github.com/deerwan/nav) 到你的 GitHub
@@ -85,10 +87,10 @@
   - 构建命令：`npm run build`
   - 输出目录：`dist`
 
-**重要：更新数据库 ID**
-- Fork 仓库后，编辑 `wrangler.toml` 文件
-- 将第8行的 `database_id` 替换为你刚创建的数据库 ID
-- 提交并推送到你的 GitHub 仓库
+**关于环境变量**：
+- ⚠️ 首次部署时的"环境变量 (高级)"选项**不会保存环境变量**
+- ✅ 环境变量需要在部署后手动配置（见步骤 4）
+- ✅ 项目可以先部署，后续再添加环境变量，不影响部署过程
 
 ### 3. 绑定数据库
 在 Pages 项目中：
@@ -100,21 +102,92 @@
 - 数据库 ID 已正确更新到 `wrangler.toml` 文件中
 
 ### 4. 配置环境变量
-在 `Settings` > `Environment variables` > `Production` 添加：
-```
-ADMIN_USERNAME = admin
-ADMIN_PASSWORD = 你的密码
-JWT_SECRET = 至少32位的随机字符串
 
-# AI 功能配置（可选）
-OPENAI_API_KEY = sk-...              # OpenAI API Key 或兼容服务的密钥
-OPENAI_BASE_URL = https://api.openai.com/v1  # API 基础地址（可选）
-OPENAI_MODEL = gpt-4o-mini           # 模型名称（可选）
-```
+**重要说明**：
+- ⚠️ Cloudflare Pages 的环境变量**必须在 Dashboard 中手动配置**
+- ⚠️ 首次部署时的"环境变量 (高级)"选项**不会保存环境变量**
 
-**AI 功能说明**：
-- 也可以在设置界面中配置 AI（登录后进入"设置" → "AI 助手"）
-- 支持所有 OpenAI 兼容的 API 服务（包括 Azure OpenAI、本地部署模型等）
+#### 配置方式
+
+**部署后配置**
+1. 完成首次部署
+2. 部署完成后，进入 Pages 项目
+3. 点击 `Settings` > `Variables and Secrets`（变量和机密）
+4. 点击"添加"按钮，逐个添加环境变量
+5. 保存环境变量后，需要手动触发重新部署：
+   - 进入 `Deployments`（部署）页面
+   - 找到最新的部署记录，点击右上角的 `...` 菜单
+   - 选择 `Retry deployment`（重试部署）
+   - 或者推送到 GitHub 仓库触发新的部署
+6. 等待重新部署完成后，环境变量生效
+
+#### 环境变量列表
+
+**必须的环境变量**（不配置将无法使用管理功能）：
+
+| 变量名 | 说明 | 示例值 |
+|--------|------|--------|
+| `ADMIN_USERNAME` | 管理员用户名 | `admin` |
+| `ADMIN_PASSWORD` | 管理员密码 | `你的密码` |
+| `JWT_SECRET` | JWT 密钥，用于生成登录 token | 至少32位的随机字符串 |
+
+**可选的环境变量**（不配置不影响基本功能）：
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `OPENAI_API_KEY` | OpenAI API Key 或兼容服务的密钥 | - |
+| `OPENAI_BASE_URL` | API 基础地址 | `https://api.openai.com/v1` |
+| `OPENAI_MODEL` | 模型名称 | `gpt-4o-mini` |
+| `OPENAI_AUTH_HEADER` | 认证 Header 名称 | `Authorization` |
+| `OPENAI_AUTH_PREFIX` | 认证前缀 | `Bearer `（注意末尾有空格）|
+
+**参考模板**：
+- 项目根目录下的 `.env.example` 文件提供了完整的环境变量模板
+- 可以参考该文件了解需要配置的环境变量
+
+
+**注意事项**：
+- 环境变量是敏感信息，请妥善保管
+- 不要将环境变量提交到 Git 仓库
+- 环境变量修改后需要等待重新部署完成才能生效
+- 如果首次部署时不添加环境变量，项目可以正常部署，但无法使用登录和管理功能
+
+### 5. 配置 R2 备份功能（可选）
+
+备份功能是可选的，如果不使用备份功能，可以跳过此步骤。
+
+**启用备份功能**：
+
+1. **在 Cloudflare R2 创建**（名称：`bookmark-backups`）
+   - 在 Cloudflare Dashboard 中进入 `Workers & Pages` > `R2`
+   - 点击 `Create bucket`，名称：`bookmark-backups`
+
+2. **取消 `wrangler.toml` 中 R2 配置的注释**
+   - 编辑 `wrangler.toml` 文件
+   - 取消第 12-14 行的注释：
+
+     ```toml
+     [[r2_buckets]]
+     binding = "BACKUP_BUCKET"
+     bucket_name = "bookmark-backups"
+     ```
+
+3. **重试部署**
+   - 提交更改并推送到 GitHub
+   - 或在 Cloudflare Pages 的 `Deployments` 页面手动重试部署
+
+**备份功能特性**：
+- ✅ 全量备份：备份所有分类、书签和设置（不包括敏感信息）
+- ✅ 自定义名称：支持为备份设置自定义名称
+- ✅ 备份列表：查看所有备份，显示备份时间、大小等信息
+- ✅ 一键恢复：从备份中恢复数据
+- ✅ 备份下载：下载备份文件到本地
+- ✅ 备份删除：删除不需要的备份
+
+**注意**：
+- 备份功能需要配置 R2 存储，否则会在设置页面显示配置提示
+- 即使未配置 R2，项目也可以正常部署和运行，其他功能不受影响
+- 备份不包括以 `secret_` 开头的设置（如 AI API Key 等敏感信息）
 
 完成！访问你的 Pages URL 即可使用。
 

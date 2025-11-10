@@ -13,6 +13,17 @@
       </button>
     </div>
     
+    <!-- 云端备份 -->
+    <div class="form-group">
+      <div class="form-header">
+        <div class="form-title">云端备份</div>
+        <div class="form-description">将数据备份到 Cloudflare R2 存储，支持备份列表管理和恢复</div>
+      </div>
+      <button class="text-btn" @click="$emit('action', 'backup')">
+        备份管理
+      </button>
+    </div>
+    
     <!-- 清理空分类 -->
     <div class="form-group">
       <div class="form-header">

@@ -53,7 +53,9 @@ const open = (ttl, defaultValue = '', placeholderText = '') => {
 const handleConfirm = () => {
   const value = inputValue.value.trim()
   show.value = false
-  if (resolvePromise) resolvePromise(value || null)
+  // 返回输入值（可能是空字符串），空字符串和 null 是不同的
+  // null 表示取消，空字符串表示用户确认了但没有输入内容
+  if (resolvePromise) resolvePromise(value === '' ? '' : value)
 }
 
 const handleCancel = () => {

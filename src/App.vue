@@ -207,6 +207,7 @@
     <FooterEditDialog ref="footerEditDialog" />
     <ImportExportDialog ref="importExportDialog" />
     <BatchOperationDialog ref="batchOperationDialog" />
+    <BackupDialog ref="backupDialog" />
     
     <!-- Settings Page -->
     <SettingsPage 
@@ -270,6 +271,7 @@ import PromptDialog from './components/PromptDialog.vue'
 import FooterEditDialog from './components/FooterEditDialog.vue'
 import ImportExportDialog from './components/ImportExportDialog.vue'
 import BatchOperationDialog from './components/BatchOperationDialog.vue'
+import BackupDialog from './components/BackupDialog.vue'
 import UpdateNotification from './components/UpdateNotification.vue'
 import ToastNotification from './components/ToastNotification.vue'
 
@@ -320,6 +322,7 @@ const promptDialog = ref(null)
 const footerEditDialog = ref(null)
 const importExportDialog = ref(null)
 const batchOperationDialog = ref(null)
+const backupDialog = ref(null)
 const settingsPage = ref(null)
 const toast = ref(null)
 
@@ -607,6 +610,10 @@ const handleSettingsAction = (action) => {
     case 'importExport':
       // 导入导出保持在设置页面内，不关闭设置页面
       importExportDialog.value.open()
+      break
+    case 'backup':
+      // 备份管理保持在设置页面内，不关闭设置页面
+      backupDialog.value.open()
       break
     case 'cleanupEmptyCategories':
       // 清理空分类保持在设置页面内
