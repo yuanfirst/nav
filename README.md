@@ -64,6 +64,10 @@
 - **认证**：JWT Token
 - **样式**：原生 CSS (现代化设计)
 
+## 🎬 视频教程
+
+- Bilibili 教程视频：[书签管理系统 部署与使用教程](https://www.bilibili.com/video/BV1zR2MB6EnW/?spm_id_from=333.1387.upload.video_card.click&vd_source=404b85ee2cae5b46707ca55291730edb)
+
 ## 🚀 快速部署
 
 ### 1. 创建 D1 数据库

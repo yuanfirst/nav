@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "书签管理助手 - Bookmark Manager",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "快速保存网页到你的书签管理系统 | Quick save web pages to your bookmark manager",
   "icons": {
     "16": "icons/icon-16.png",
@@ -13,8 +13,11 @@
     "activeTab",
     "tabs",
     "storage",
-    "contextMenus",
-    "<all_urls>"
+    "contextMenus"
+  ],
+  "optional_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "browser_action": {
     "default_popup": "popup.html",
@@ -35,14 +38,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "bookmark-manager@deerwan.github.io",
-      "strict_min_version": "91.0",
-      "data_collection": {
-        "collects": false
-      },
-      "data_collection_permissions": {
-        "required": ["none"],
-        "description": "此扩展仅在本地存储用户的书签服务器配置和认证令牌，不收集或传输任何个人数据到第三方服务器。"
-      }
+      "strict_min_version": "91.0"
     }
   }
 }
