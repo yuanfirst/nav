@@ -172,9 +172,9 @@ export function useBookmarks() {
     }
   }
   
-  const addCategory = async (name, parentId = null) => {
+  const addCategory = async (name, parentId = null, isPrivate = false) => {
     try {
-      const body = { name }
+      const body = { name, is_private: isPrivate }
       if (parentId !== null) {
         body.parent_id = parentId
       }
@@ -198,12 +198,16 @@ export function useBookmarks() {
     }
   }
   
-  const updateCategory = async (id, name, parentId = undefined) => {
+  const updateCategory = async (id, name, parentId = undefined, isPrivate = undefined) => {
     try {
       const body = { name }
       // 如果提供了 parentId 参数（包括 null），则更新父分类
       if (parentId !== undefined) {
         body.parent_id = parentId
+      }
+      // 如果提供了 isPrivate 参数，则更新私密状态
+      if (isPrivate !== undefined) {
+        body.is_private = isPrivate
       }
       
       const response = await apiRequest(`/api/categories/${id}`, {

@@ -383,9 +383,12 @@ const handleKeydown = (event) => {
 }
 
 .bookmark-card.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
+  opacity: 0.4;
+  transform: scale(0.98) rotate(2deg);
   cursor: grabbing !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  border: 2px dashed var(--primary);
+  background: var(--bg-secondary);
 }
 
 .bookmark-card.selected {
@@ -406,28 +409,41 @@ const handleKeydown = (event) => {
   pointer-events: none;
   z-index: 9999;
   transform: translate(-9999px, -9999px);
+  animation: dragPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes dragPulse {
+  0%, 100% {
+    transform: translate(-9999px, -9999px) scale(1);
+  }
+  50% {
+    transform: translate(-9999px, -9999px) scale(1.05);
+  }
 }
 
 .drag-preview__content {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.6rem 0.8rem;
-  background: rgba(15, 23, 42, 0.9);
+  gap: 0.3rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.95) 100%);
   color: white;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.3);
-  min-width: 180px;
+  border-radius: var(--radius);
+  box-shadow: 0 16px 32px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  min-width: 200px;
+  backdrop-filter: blur(10px);
 }
 
 .drag-preview__title {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .drag-preview__url {
-  font-size: 0.75rem;
-  opacity: 0.8;
+  font-size: 0.8rem;
+  opacity: 0.9;
+  font-weight: 500;
 }
 
 .selection-checkbox {
@@ -453,31 +469,36 @@ const handleKeydown = (event) => {
   top: 0.5rem;
   left: 0.5rem;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: grab;
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
   border-radius: var(--radius-sm);
-  padding: 0.25rem;
+  padding: 0.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px var(--shadow);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transform: scale(0.9);
 }
 
 .drag-handle svg {
   width: 16px;
   height: 16px;
-  stroke-width: 2;
-  color: var(--text-secondary);
+  stroke-width: 2.5;
+  color: white;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 .bookmark-card:hover .drag-handle {
-  opacity: 0.8;
+  opacity: 1;
+  transform: scale(1);
 }
 
 .drag-handle:hover {
   opacity: 1 !important;
-  background: var(--bg-hover);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 1) 0%, rgba(139, 92, 246, 1) 100%);
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
 .drag-handle:active {
@@ -487,25 +508,40 @@ const handleKeydown = (event) => {
 .bookmark-card.drop-before::before {
   content: '';
   position: absolute;
-  top: -2px;
-  left: 0;
-  right: 0;
+  top: -4px;
+  left: -4px;
+  right: -4px;
   height: 4px;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--primary), rgba(139, 92, 246, 0.8));
   border-radius: var(--radius);
   z-index: 20;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6), 0 0 16px rgba(99, 102, 241, 0.3);
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scaleY(1.2);
+  }
 }
 
 .bookmark-card.drop-after::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
+  bottom: -4px;
+  left: -4px;
+  right: -4px;
   height: 4px;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--primary), rgba(139, 92, 246, 0.8));
   border-radius: var(--radius);
   z-index: 20;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6), 0 0 16px rgba(99, 102, 241, 0.3);
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
 }
 
 @media (max-width: 768px) {

@@ -12,7 +12,16 @@
           @change="handleToggleCategorySelection"
         />
       </div>
-      <h2 class="category-title">{{ category.name }}</h2>
+      <h2 class="category-title">
+        {{ category.name }}
+        <span v-if="category.is_private" class="private-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>私密</span>
+        </span>
+      </h2>
       <div v-if="isEditMode && !isBatchMode" class="category-actions">
         <button class="icon-btn" @click="$emit('edit-category', category)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -479,6 +488,37 @@ const handleKeyboardReorder = ({ id, direction }) => {
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.category-title .private-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+html.dark .category-title .private-badge {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.category-title .private-badge svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 /* Efficient Mode - Compact Category Title */
@@ -506,8 +546,22 @@ const handleKeyboardReorder = ({ id, direction }) => {
 }
 
 .bookmarks-grid.is-drag-over {
-  border: 2px dashed var(--primary);
+  border: 3px dashed var(--primary);
   border-radius: var(--radius);
+  background: rgba(99, 102, 241, 0.05);
+  box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
+  animation: gridDragOver 1.5s ease-in-out infinite;
+}
+
+@keyframes gridDragOver {
+  0%, 100% {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+  }
+  50% {
+    border-color: rgba(139, 92, 246, 0.8);
+    background: rgba(99, 102, 241, 0.1);
+  }
 }
 
 .empty-state {
@@ -523,11 +577,34 @@ const handleKeyboardReorder = ({ id, direction }) => {
 /* 拖拽占位符样式 */
 .drag-placeholder {
   min-height: 120px;
-  border: 2px dashed var(--primary);
+  border: 3px dashed var(--primary);
   border-radius: var(--radius);
-  background: rgba(99, 102, 241, 0.1);
-  transition: all 0.2s ease;
-  animation: placeholderPulse 1.5s ease-in-out infinite;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: placeholderPulse 1.2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2), inset 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.drag-placeholder::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .drag-placeholder.efficient-mode {
@@ -536,13 +613,15 @@ const handleKeyboardReorder = ({ id, direction }) => {
 
 @keyframes placeholderPulse {
   0%, 100% {
-    opacity: 0.6;
+    opacity: 0.7;
     border-color: var(--primary);
+    transform: scale(1);
   }
   50% {
     opacity: 1;
-    border-color: var(--primary-dark);
-    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(139, 92, 246, 0.8);
+    transform: scale(1.02);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
   }
 }
 

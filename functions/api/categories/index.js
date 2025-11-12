@@ -23,9 +23,14 @@ export async function onRequestGet(context) {
     }
     
     // 获取所有分类（包含parent_id和depth）
-    const { results } = await env.DB.prepare(`
-      SELECT * FROM categories ORDER BY depth, position
-    `).all();
+    // 如果未登录，过滤掉私密分类
+    let query = 'SELECT * FROM categories';
+    if (!isAuthenticated) {
+      query += ' WHERE is_private = 0';
+    }
+    query += ' ORDER BY depth, position';
+    
+    const { results } = await env.DB.prepare(query).all();
     
     return new Response(JSON.stringify({ data: results }), {
       status: 200,
@@ -44,7 +49,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   
   try {
-    const { name, parent_id } = await request.json();
+    const { name, parent_id, is_private } = await request.json();
     
     // 计算depth
     let depth = 0;
@@ -80,9 +85,11 @@ export async function onRequestPost(context) {
     
     const newPosition = (maxPosition || -1) + 1;
     
+    const isPrivate = is_private ? 1 : 0;
+    
     const result = await env.DB.prepare(
-      'INSERT INTO categories (name, position, parent_id, depth) VALUES (?, ?, ?, ?)'
-    ).bind(name, newPosition, parent_id || null, depth).run();
+      'INSERT INTO categories (name, position, parent_id, depth, is_private) VALUES (?, ?, ?, ?, ?)'
+    ).bind(name, newPosition, parent_id || null, depth, isPrivate).run();
     
     return new Response(JSON.stringify({
       success: true,

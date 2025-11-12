@@ -5,10 +5,10 @@ export async function onRequestPut(context) {
   
   try {
     const body = await request.json();
-    const { name, parent_id, position } = body;
+    const { name, parent_id, position, is_private } = body;
     
     const existing = await env.DB.prepare(
-      'SELECT id, parent_id, depth, position FROM categories WHERE id = ?'
+      'SELECT id, parent_id, depth, position, is_private FROM categories WHERE id = ?'
     ).bind(id).first();
     
     if (!existing) {
@@ -86,9 +86,15 @@ export async function onRequestPut(context) {
       newPosition = (maxPosition || -1) + 1;
     }
     
+    // 处理 is_private
+    let newIsPrivate = existing.is_private;
+    if (Object.prototype.hasOwnProperty.call(body, 'is_private')) {
+      newIsPrivate = is_private ? 1 : 0;
+    }
+    
     await env.DB.prepare(
-      'UPDATE categories SET name = ?, parent_id = ?, depth = ?, position = ? WHERE id = ?'
-    ).bind(name, newParentId || null, newDepth, newPosition, id).run();
+      'UPDATE categories SET name = ?, parent_id = ?, depth = ?, position = ?, is_private = ? WHERE id = ?'
+    ).bind(name, newParentId || null, newDepth, newPosition, newIsPrivate, id).run();
     
     // 如果 depth 发生变化，需要递归更新所有子分类的 depth
     if (newDepth !== existing.depth) {

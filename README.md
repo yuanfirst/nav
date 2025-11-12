@@ -146,7 +146,7 @@
 | `OPENAI_AUTH_PREFIX` | 认证前缀 | `Bearer `（注意末尾有空格）|
 
 **参考模板**：
-- 项目根目录下的 `.env.example` 文件提供了完整的环境变量模板
+- 项目根目录下的 `.env.example.txt` 文件提供了完整的环境变量模板
 - 可以参考该文件了解需要配置的环境变量
 
 
@@ -258,14 +258,14 @@
   <tr>
     <td align="center">
       <strong>微信</strong><br>
-      <img src="images/wx.JPG" alt="微信" width="200">
+      <img src="images/zsm.jpeg" alt="微信" width="200">
     </td>
     <td align="center">
       <strong>支付宝</strong><br>
       <img src="images/zfb.JPG" alt="支付宝" width="200">
     </td>
     <td align="center">
-      <strong>支付宝红包码</strong><br>
+      <strong>红包码</strong><br>
       <img src="images/hbm.PNG" alt="红包码" width="200">
     </td>
   </tr>

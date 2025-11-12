@@ -44,6 +44,13 @@
             </select>
           </div>
           
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input v-model="form.is_private" type="checkbox">
+              <span>私密分类（仅登录后可见）</span>
+            </label>
+          </div>
+          
           <div v-if="form.parent_id && categoryType === 'sub'" class="preview-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -83,7 +90,8 @@ const categoryType = ref('main')
 
 const form = ref({
   name: '',
-  parent_id: ''
+  parent_id: '',
+  is_private: false
 })
 
 // 可用的父分类列表
@@ -143,7 +151,8 @@ const open = (category = null, presetParentId = null) => {
     editId.value = category.id
     form.value = {
       name: category.name,
-      parent_id: category.parent_id || ''
+      parent_id: category.parent_id || '',
+      is_private: !!category.is_private
     }
     categoryType.value = category.parent_id ? 'sub' : 'main'
   } else {
@@ -152,7 +161,8 @@ const open = (category = null, presetParentId = null) => {
     editId.value = null
     form.value = {
       name: '',
-      parent_id: presetParentId || ''
+      parent_id: presetParentId || '',
+      is_private: false
     }
     categoryType.value = presetParentId ? 'sub' : 'main'
   }
@@ -188,11 +198,11 @@ const handleSubmit = async () => {
   
   let result
   if (isEdit.value) {
-    // 编辑分类时更新名称和父分类
-    result = await updateCategory(editId.value, form.value.name.trim(), parentId)
+    // 编辑分类时更新名称、父分类和私密状态
+    result = await updateCategory(editId.value, form.value.name.trim(), parentId, form.value.is_private)
   } else {
     // 新建分类
-    result = await addCategory(form.value.name.trim(), parentId)
+    result = await addCategory(form.value.name.trim(), parentId, form.value.is_private)
   }
   
   if (result.success) {
@@ -296,6 +306,37 @@ html.dark .preview-box {
 option:disabled {
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  transition: var(--transition);
+}
+
+.checkbox-label:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.checkbox-label span {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
 }
 
 @media (max-width: 480px) {
