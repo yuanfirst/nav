@@ -12,7 +12,7 @@
           class="form-input" 
           readonly
         />
-        <button class="btn btn-secondary" @click="$emit('editTitle')">
+        <button class="text-btn" @click="$emit('editTitle')">
           编辑
         </button>
       </div>
@@ -24,7 +24,7 @@
       <label class="form-label">自定义页脚</label>
       <div class="form-row">
         <div class="footer-preview" v-html="footerContent"></div>
-        <button class="btn btn-secondary" @click="$emit('editFooter')">
+        <button class="text-btn" @click="$emit('editFooter')">
           编辑
         </button>
       </div>
@@ -35,10 +35,43 @@
     <div class="form-group">
       <label class="form-label">主题模式</label>
       <div class="form-row">
-        <span class="form-text">{{ isDark ? '暗色模式' : '亮色模式' }}</span>
-        <button class="btn btn-primary" @click="$emit('toggleTheme')">
-          {{ isDark ? '切换到亮色' : '切换到暗色' }}
-        </button>
+        <select 
+          class="form-select"
+          :value="themeMode"
+          @change="handleThemeChange"
+        >
+          <option value="light">🌞 亮色模式</option>
+          <option value="dark">🌙 暗色模式</option>
+          <option value="system">💻 跟随系统</option>
+        </select>
+      </div>
+      <div class="form-hint">
+        {{ 
+          themeMode === 'light' ? '使用亮色主题' : 
+          themeMode === 'dark' ? '使用暗色主题' : 
+          '根据系统设置自动切换主题'
+        }}
+      </div>
+    </div>
+    
+    <!-- 显示模式 -->
+    <div class="form-group">
+      <label class="form-label">显示模式</label>
+      <div class="form-row">
+        <select 
+          class="form-select"
+          :value="displayMode"
+          @change="handleDisplayModeChange"
+        >
+          <option value="standard">📋 标准模式</option>
+          <option value="efficient">⚡ 高效模式</option>
+        </select>
+      </div>
+      <div class="form-hint">
+        {{ 
+          displayMode === 'standard' ? '标准大小的书签卡片' : 
+          '紧凑布局，单页显示更多内容'
+        }}
       </div>
     </div>
     
@@ -75,19 +108,198 @@
       </div>
       <div class="form-hint">不显示没有书签的分类</div>
     </div>
+
+    <!-- 公开模式 -->
+    <div class="form-group">
+      <label class="form-label">访问模式</label>
+      <div class="form-row">
+        <span class="form-text">{{ publicMode ? '公开模式' : '非公开模式' }}</span>
+        <label class="switch">
+          <input
+            type="checkbox"
+            :checked="publicMode"
+            @change="$emit('togglePublicMode')"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="form-hint">
+        {{ publicMode ? '未登录用户可访问公开书签' : '未登录用户无法访问书签和分类' }}
+      </div>
+    </div>
+    
+    <!-- 随机壁纸 -->
+    <div class="form-group">
+      <label class="form-label">随机壁纸</label>
+      <div class="form-row">
+        <span class="form-text">{{ randomWallpaper ? '已开启' : '已关闭' }}</span>
+        <label class="switch">
+          <input 
+            type="checkbox" 
+            :checked="randomWallpaper"
+            @change="$emit('toggleRandomWallpaper')"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="form-hint">启用后会在页面背景显示随机壁纸</div>
+    </div>
+    
+    <!-- 壁纸API接口 -->
+    <div v-if="randomWallpaper" class="form-group">
+      <label class="form-label">壁纸API接口</label>
+      <div class="form-row">
+        <input 
+          type="text" 
+          :value="wallpaperApi || '未设置'" 
+          class="form-input" 
+          readonly
+        />
+        <button type="button" class="text-btn" @click="openDialog">
+          编辑
+        </button>
+      </div>
+      <div class="form-hint">自定义随机壁纸API接口地址（留空则不显示壁纸）</div>
+    </div>
+    
+    <!-- API接口编辑对话框 -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showApiDialog" class="dialog-overlay" @click="showApiDialog = false">
+          <div class="dialog-box api-dialog" @click.stop>
+            <h3 class="dialog-title">编辑壁纸API接口</h3>
+            
+            <div class="form-group">
+              <label>API接口地址 *</label>
+              <input 
+                v-model="apiInput" 
+                type="text" 
+                placeholder="请输入API接口地址，例如：https://api.example.com/wallpaper"
+                @keyup.enter="handleConfirm"
+                autofocus
+              >
+              <div class="form-hint">请输入返回图片URL的API接口地址</div>
+            </div>
+            
+            <div class="form-group">
+              <div class="example-apis">
+                <div class="example-title">示例接口（点击快速填入）：</div>
+                <button 
+                  type="button"
+                  class="example-btn" 
+                  @click="apiInput = 'https://api.paugram.com/wallpaper/'"
+                >
+                  Paugram 壁纸 API
+                </button>
+                <button 
+                  type="button"
+                  class="example-btn" 
+                  @click="apiInput = 'https://picsum.photos/1920/1080'"
+                >
+                  Lorem Picsum 随机图片
+                </button>
+              </div>
+            </div>
+            
+            <p v-if="error" class="error-message">{{ error }}</p>
+            
+            <div class="dialog-buttons">
+              <button class="text-btn" @click="handleCancel">取消</button>
+              <button class="btn btn-primary" @click="handleConfirm">确认</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-defineProps({
+import { ref, nextTick } from 'vue'
+
+const props = defineProps({
+  themeMode: String,
   isDark: Boolean,
   showSearch: Boolean,
   hideEmptyCategories: Boolean,
+  publicMode: Boolean,
   customTitle: String,
-  footerContent: String
+  footerContent: String,
+  randomWallpaper: Boolean,
+  wallpaperApi: String,
+  displayMode: String
 })
 
-defineEmits(['editTitle', 'editFooter', 'toggleTheme', 'toggleSearch', 'toggleHideEmpty'])
+const emit = defineEmits([
+  'editTitle', 
+  'editFooter', 
+  'setThemeMode', 
+  'toggleSearch', 
+  'toggleHideEmpty', 
+  'togglePublicMode',
+  'toggleRandomWallpaper',
+  'updateWallpaperApi',
+  'setDisplayMode'
+])
+
+const showApiDialog = ref(false)
+const apiInput = ref('')
+const error = ref('')
+
+const handleThemeChange = (event) => {
+  emit('setThemeMode', event.target.value)
+}
+
+const handleDisplayModeChange = (event) => {
+  emit('setDisplayMode', event.target.value)
+}
+
+const handleConfirm = () => {
+  error.value = ''
+  
+  const trimmedUrl = apiInput.value.trim()
+  
+  // 如果为空，也允许（用于清除API）
+  if (trimmedUrl === '') {
+    emit('updateWallpaperApi', '')
+    showApiDialog.value = false
+    return
+  }
+  
+  // 验证URL格式
+  try {
+    new URL(trimmedUrl)
+    emit('updateWallpaperApi', trimmedUrl)
+    showApiDialog.value = false
+  } catch {
+    error.value = '请输入有效的URL地址'
+  }
+}
+
+const handleCancel = () => {
+  apiInput.value = props.wallpaperApi || ''
+  error.value = ''
+  showApiDialog.value = false
+}
+
+// 打开对话框时初始化输入值
+const openDialog = (e) => {
+  if (e) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  apiInput.value = props.wallpaperApi || ''
+  error.value = ''
+  showApiDialog.value = true
+  // 确保对话框显示
+  nextTick(() => {
+    const dialog = document.querySelector('.api-dialog')
+    if (dialog) {
+      const input = dialog.querySelector('input')
+      if (input) input.focus()
+    }
+  })
+}
 </script>
 
 <style scoped>
@@ -96,97 +308,78 @@ defineEmits(['editTitle', 'editFooter', 'toggleTheme', 'toggleSearch', 'toggleHi
 }
 
 .section-title {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text);
-  margin-bottom: var(--space-8);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  margin-bottom: 1.5rem;
 }
 
-.section-title::before {
-  content: '🎨';
-  font-size: var(--text-xl);
-}
 
 .form-group {
-  margin-bottom: var(--space-6);
-  padding: var(--space-6);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.form-group::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-light));
-  opacity: 0;
-  transition: var(--transition);
-}
-
-.form-group:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px var(--shadow-md);
-  border-color: var(--primary);
-}
-
-.form-group:hover::before {
-  opacity: 1;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
 }
 
 .form-label {
   display: block;
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  font-size: 0.9375rem;
+  font-weight: 500;
   color: var(--text);
-  margin-bottom: var(--space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  margin-bottom: 0.75rem;
 }
 
-.form-label::before {
-  content: '⚡';
-  font-size: var(--text-base);
-}
 
 .form-row {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .form-input {
   flex: 1;
-  padding: var(--space-3) var(--space-4);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
-  font-size: var(--text-sm);
-  transition: var(--transition);
+  font-size: 0.9375rem;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .form-input:read-only {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   cursor: not-allowed;
+}
+
+.form-select {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
+  padding-right: 2rem;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .form-text {
@@ -197,83 +390,59 @@ defineEmits(['editTitle', 'editFooter', 'toggleTheme', 'toggleSearch', 'toggleHi
 }
 
 .form-hint {
-  font-size: var(--text-xs);
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.5;
-  margin-top: var(--space-2);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  margin-top: 0.5rem;
 }
 
-.form-hint::before {
-  content: '💡';
-  font-size: var(--text-xs);
-}
 
 .footer-preview {
   flex: 1;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
+  padding: 0.5rem;
+  background: var(--bg-secondary);
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   max-height: 60px;
   overflow: hidden;
 }
 
 .btn {
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: var(--transition);
   border: none;
-  position: relative;
-  overflow: hidden;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-}
-
-.btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn:hover::before {
-  left: 100%;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
 }
 
 .btn-primary {
   background: var(--primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
   background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
-.btn-secondary {
-  background: var(--bg-tertiary);
+.text-btn {
+  background: transparent;
+  border: none;
   color: var(--text);
-  border: 2px solid var(--border);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
 }
 
-.btn-secondary:hover {
-  background: var(--bg-hover);
-  border-color: var(--primary);
-  transform: translateY(-1px);
+.text-btn:hover {
+  color: var(--primary);
 }
 
 .switch {
@@ -282,6 +451,153 @@ defineEmits(['editTitle', 'editFooter', 'toggleTheme', 'toggleSearch', 'toggleHi
   width: 60px;
   height: 32px;
   flex-shrink: 0;
+}
+</style>
+
+<!-- 对话框样式必须非 scoped，因为使用了 Teleport -->
+<style>
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.api-dialog {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 10001;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.dark .api-dialog {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.api-dialog .dialog-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+
+.api-dialog .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.api-dialog .form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.api-dialog .form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.api-dialog .form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.api-dialog .form-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.api-dialog .dialog-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.api-dialog .example-apis {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.api-dialog .example-title {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.api-dialog .example-btn {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+}
+
+.api-dialog .example-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.api-dialog .error-message {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.api-dialog .text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
+}
+
+.api-dialog .text-btn:hover {
+  color: var(--primary);
+}
+
+/* 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .switch input {

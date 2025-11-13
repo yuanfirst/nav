@@ -7,6 +7,21 @@ export async function onRequestGet(context) {
     const authHeader = request.headers.get('Authorization');
     const isAuthenticated = authHeader && authHeader.startsWith('Bearer ');
     
+    // 获取 publicMode 设置
+    const publicModeSetting = await env.DB.prepare(
+      'SELECT value FROM settings WHERE key = ?'
+    ).bind('publicMode').first();
+    
+    const publicMode = publicModeSetting?.value !== 'false';
+    
+    // 如果是非公开模式且未登录，返回空数组
+    if (!publicMode && !isAuthenticated) {
+      return new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     let query = `
       SELECT b.*, c.name as category_name
       FROM bookmarks b
@@ -40,6 +55,33 @@ export async function onRequestPost(context) {
   
   try {
     const { name, url, description, icon, category_id, is_private } = await request.json();
+    
+    // 检查 URL 是否已存在
+    const existingBookmark = await env.DB.prepare(
+      `SELECT b.id, b.name, b.url, b.category_id, c.name as category_name 
+       FROM bookmarks b 
+       LEFT JOIN categories c ON b.category_id = c.id 
+       WHERE b.url = ? 
+       LIMIT 1`
+    ).bind(url.trim()).first();
+    
+    if (existingBookmark) {
+      return new Response(JSON.stringify({
+        success: false,
+        duplicate: true,
+        error: '该 URL 已存在',
+        existingBookmark: {
+          id: existingBookmark.id,
+          name: existingBookmark.name,
+          url: existingBookmark.url,
+          category_id: existingBookmark.category_id,
+          category_name: existingBookmark.category_name
+        }
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     // 获取该分类下的最大position
     const { position: maxPosition } = await env.DB.prepare(

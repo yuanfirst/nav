@@ -5,12 +5,26 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "bookmark-db"
+
 database_id = "387edcc4-7ecf-459c-b412-baa177c23fb4"
 
+
+# R2 存储桶配置（用于备份功能，可选）
+#
+#[[r2_buckets]]
+#binding = "BACKUP_BUCKET"
+#bucket_name = "bookmark-backups"
+#
 # 注意：敏感的环境变量（如密码、密钥）应该在 Cloudflare Pages Dashboard 中设置
 # 而不是写在这个配置文件中！
 # 前往 Pages 项目 > Settings > Environment variables 手动添加：
 # - ADMIN_USERNAME
 # - ADMIN_PASSWORD  
 # - JWT_SECRET
-
+# 
+# AI 功能配置（可选，也可以在设置界面中配置）：
+# - OPENAI_API_KEY          # OpenAI API Key（必须，如果不在设置中配置）
+# - OPENAI_BASE_URL         # API 基础地址（可选，默认 https://api.openai.com/v1）
+# - OPENAI_MODEL            # 模型名称（可选，默认 gpt-4o-mini）
+# - OPENAI_AUTH_HEADER      # 认证 Header 名称（可选，默认 Authorization）
+# - OPENAI_AUTH_PREFIX      # 认证前缀（可选，默认 "Bearer "，留空表示不添加前缀）

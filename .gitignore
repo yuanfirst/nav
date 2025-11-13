@@ -1,12 +1,13 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
 # Build output
 dist/
 .output/
+browser-extension/dist/
 
 # Environment
 .env
@@ -25,16 +26,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Images (keep directory structure but ignore system files)
+images/.DS_Store
+
 # Wrangler
 .wrangler/
 wrangler.toml.backup
-
-# workers
-workers.js
-
-# Test files
-test-bookmarks.html
-test-bookmarks.json
-bookmarks_2025_10_22.html
-bookmarks_2025_10_22.json
-优化清单.md

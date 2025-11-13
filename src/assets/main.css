@@ -6,6 +6,10 @@
 }
 
 :root {
+  /* Layout dimensions */
+  --app-header-height: 140px;
+  --app-sidebar-available-height: calc(100vh - var(--app-header-height));
+  
   /* 主色调  */
   --primary: #6366f1;
   --primary-dark: #4f46e5;
@@ -103,6 +107,12 @@
   --font-semibold: 600;
   --font-bold: 700;
   --font-extrabold: 800;
+  
+  /* 安全区域变量 - 通用解决方案 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 html.dark {
@@ -234,6 +244,32 @@ body {
   transition: var(--transition);
   font-size: var(--text-base);
   font-weight: var(--font-normal);
+  position: relative;
+}
+
+/* 壁纸遮罩层 - 仅在启用壁纸时显示，增强对比度 */
+body.has-wallpaper::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.12) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.3s ease;
+}
+
+html.dark body.has-wallpaper::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.15) 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
 }
 
 /* App Layout */
@@ -241,6 +277,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 /* Header */
@@ -248,18 +286,25 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  padding: 1rem;
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.9);
+  padding: calc(1rem + var(--safe-top)) 1rem 1rem 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 html.dark .app-header {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.85);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Efficient Mode - Compact Header */
+.app-header.efficient-mode {
+  padding: calc(0.625rem + var(--safe-top)) 1rem 0.625rem 1rem;
 }
 
 .header-content {
+  position: relative;
   max-width: 1400px;
   margin: 0 auto;
   display: flex;
@@ -268,35 +313,94 @@ html.dark .app-header {
   margin-bottom: 1rem;
 }
 
+/* Efficient Mode - Compact Header Content */
+.app-header.efficient-mode .header-content {
+  margin-bottom: 0.625rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-toggle-btn {
+  display: inline-flex;
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.2s;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--primary);
+}
+
+.sidebar-toggle-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+}
+
 .app-title {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
 }
 
-.header-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
+/* Efficient Mode - Compact App Title */
+.app-header.efficient-mode .app-title {
+  font-size: 1.25rem;
 }
 
-.header-actions .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+/* Header 文字按钮样式 */
+.header-text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-weight: 500;
 }
 
-.header-actions .btn svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2.5;
-  flex-shrink: 0;
+.header-text-btn:hover {
+  color: var(--primary);
+}
+
+/* 响应式：移动端按钮样式调整 */
+@media (max-width: 768px) {
+  .header-right {
+    gap: 0.25rem;
+  }
+  
+  .header-text-btn {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
 }
 
 .header-search {
   max-width: 600px;
   margin: 1rem auto;
+}
+
+/* Efficient Mode - Compact Header Search */
+.app-header.efficient-mode .header-search {
+  margin: 0.625rem auto;
 }
 
 /* Search Bar */
@@ -309,6 +413,11 @@ html.dark .app-header {
   border-radius: var(--radius);
   padding: 0.75rem 1rem;
   transition: var(--transition);
+}
+
+/* Efficient Mode - Compact Search Bar */
+.app-header.efficient-mode .search-bar {
+  padding: 0.5rem 0.75rem;
 }
 
 .search-bar:focus-within {
@@ -398,13 +507,81 @@ html.dark .app-header {
   color: white;
 }
 
-/* Main Content */
-.app-main {
+/* Page Main */
+.page-main {
   flex: 1;
-  max-width: 1400px;
-  margin: 2rem 0;
-  padding: 0 1rem;
-  text-align: left;
+  min-height: calc(100vh - 200px);
+}
+
+/* Main Layout with Sidebar */
+.main-layout {
+  display: flex;
+  gap: 0;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  align-items: flex-start;
+  position: relative;
+  min-height: calc(100vh - var(--app-header-height, 140px));
+}
+
+/* Efficient Mode - Compact Main Layout */
+.main-layout.efficient-mode {
+  padding: 0 0.75rem 1.25rem;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 110;
+}
+
+/* Bookmarks Area */
+.bookmarks-area {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2rem;
+}
+
+/* Efficient Mode - Compact Bookmarks Area */
+.bookmarks-area.efficient-mode {
+  padding-top: 1rem;
+}
+
+@media (min-width: 1025px) {
+  .main-layout {
+    gap: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  /* Efficient Mode - Desktop */
+  .main-layout.efficient-mode {
+    gap: 1.25rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .main-layout {
+    padding: 1rem 1rem 2rem;
+  }
+  
+  .bookmarks-area {
+    padding-top: 0;
+  }
+  
+  /* Efficient Mode - Mobile */
+  .main-layout.efficient-mode {
+    padding: 0.75rem 0.75rem 1.25rem;
+  }
+  
+  .bookmarks-area.efficient-mode {
+    padding-top: 0;
+  }
 }
 
 .loading {
@@ -460,19 +637,39 @@ html.dark .app-header {
   scroll-margin-top: 140px;
 }
 
+/* Efficient Mode - Adjust scroll margin for compact header */
+.app.efficient-mode .category-section {
+  scroll-margin-top: 100px;
+}
+
 .category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border);
+  padding: 0.5rem 0;
+}
+
+/* Efficient Mode - Compact Category Header Padding */
+.app.efficient-mode .category-header {
+  padding: 0.25rem 0;
 }
 
 .category-title {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+/* Efficient Mode - Compact Category Title */
+.app.efficient-mode .category-title {
+  font-size: 1.25rem;
+  padding: 0.25rem 0;
+  gap: 0.375rem;
 }
 
 .category-actions {
@@ -491,13 +688,22 @@ html.dark .app-header {
 /* Bookmark Card */
 .bookmark-card {
   position: relative;
-  background: var(--bg-secondary);
-  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: var(--radius);
   padding: 0.875rem;
   cursor: pointer;
   transition: var(--transition);
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+html.dark .bookmark-card {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .bookmark-card:hover {
@@ -508,6 +714,12 @@ html.dark .app-header {
 
 .bookmark-card[draggable="true"] {
   cursor: move;
+}
+
+/* Efficient Mode - Compact Card Styling */
+.bookmark-card.efficient-mode {
+  padding: 0.625rem;
+  border-radius: var(--radius-sm);
 }
 
 .card-header {
@@ -553,6 +765,28 @@ html.dark .app-header {
   line-height: 1.4;
 }
 
+/* Efficient Mode - Compact Elements */
+.bookmark-card.efficient-mode .card-header {
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+}
+
+.bookmark-card.efficient-mode .card-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.bookmark-card.efficient-mode .card-title {
+  font-size: 0.8125rem;
+}
+
+.bookmark-card.efficient-mode .card-description {
+  font-size: 0.75rem;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  line-height: 1.3;
+}
+
 .private-badge {
   display: inline-flex;
   align-items: center;
@@ -574,6 +808,17 @@ html.dark .private-badge {
   width: 12px;
   height: 12px;
   stroke-width: 2.5;
+}
+
+.bookmark-card.efficient-mode .private-badge {
+  padding: 0.125rem 0.3rem;
+  font-size: 0.625rem;
+  margin-top: 0.3rem;
+}
+
+.bookmark-card.efficient-mode .private-badge svg {
+  width: 10px;
+  height: 10px;
 }
 
 .card-actions {
@@ -675,15 +920,23 @@ html.dark .private-badge {
   height: 48px;
   border: none;
   border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px var(--shadow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: var(--transition);
+}
+
+html.dark .floating-btn {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .floating-btn:hover {
@@ -734,8 +987,9 @@ html.dark .private-badge {
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -744,15 +998,23 @@ html.dark .private-badge {
 }
 
 .dialog-box {
-  background: var(--bg);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius);
   padding: 1.25rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 40px var(--shadow-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   animation: dialogSlide 0.3s ease;
   max-height: 85vh;
   overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.dark .dialog-box {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 @keyframes dialogSlide {
@@ -917,18 +1179,30 @@ html.dark .private-badge {
     height: 12px;
   }
   
-    .app-main {
-      margin: 1rem 0;
-    }
+  .app-main {
+    margin: 1rem 0;
   }
+}
 
 /* Footer */
 .app-footer {
   margin-top: auto;
   padding: 1.5rem 1rem;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   text-align: center;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+html.dark .app-footer {
+  background: rgba(30, 41, 59, 0.6);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Efficient Mode - Compact Footer */
+.app.efficient-mode .app-footer {
+  padding: 1rem 0.75rem;
 }
 
 .footer-content {
@@ -937,6 +1211,12 @@ html.dark .private-badge {
   line-height: 1.5;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Efficient Mode - Compact Footer Content */
+.app.efficient-mode .footer-content {
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
 
 .footer-content a {
@@ -1319,5 +1599,23 @@ html.dark ::selection {
 .success-state:focus {
   outline-color: var(--success);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Bookmark highlight animation for search */
+@keyframes highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+    transform: scale(1.02);
+  }
+}
+
+.bookmark-card.highlight-bookmark {
+  animation: highlight-pulse 0.6s ease-in-out 2;
+  border-color: var(--primary) !important;
+  background: rgba(99, 102, 241, 0.05);
 }
 

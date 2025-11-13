@@ -22,6 +22,12 @@
               @keyup.enter="handleLogin"
             >
           </div>
+          <div class="form-group">
+            <label class="remember-me-label">
+              <input v-model="rememberMe" type="checkbox">
+              <span>记住我（一个月内免登录）</span>
+            </label>
+          </div>
           <p v-if="error" class="error-message">{{ error }}</p>
           <div class="dialog-buttons">
             <button class="btn btn-secondary" @click="close">取消</button>
@@ -42,12 +48,14 @@ const { login } = useAuth()
 const show = ref(false)
 const username = ref('')
 const password = ref('')
+const rememberMe = ref(false)
 const error = ref('')
 
 const open = () => {
   show.value = true
   username.value = ''
   password.value = ''
+  rememberMe.value = false
   error.value = ''
 }
 
@@ -61,7 +69,7 @@ const handleLogin = async () => {
     return
   }
   
-  const result = await login(username.value, password.value)
+  const result = await login(username.value, password.value, rememberMe.value)
   
   if (result.success) {
     close()
@@ -75,4 +83,33 @@ defineExpose({
   close
 })
 </script>
+
+<style scoped>
+.remember-me-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.remember-me-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.remember-me-label span {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+  user-select: none;
+}
+
+.remember-me-label:hover span {
+  color: var(--primary);
+}
+</style>
 
