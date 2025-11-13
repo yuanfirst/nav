@@ -2,10 +2,12 @@
 export async function onRequestPut(context) {
   const { request, env, params } = context;
   const id = Number(params.id);
+  let name, newParentId;
   
   try {
     const body = await request.json();
-    const { name, parent_id, position, is_private } = body;
+    name = body.name;
+    const { parent_id, position, is_private } = body;
     
     const existing = await env.DB.prepare(
       'SELECT id, parent_id, depth, position, is_private FROM categories WHERE id = ?'
@@ -19,7 +21,7 @@ export async function onRequestPut(context) {
     }
     
     // 处理 parent_id 更新
-    let newParentId = existing.parent_id;
+    newParentId = existing.parent_id;
     let newDepth = existing.depth;
     const parentProvided = Object.prototype.hasOwnProperty.call(body, 'parent_id');
     if (parentProvided) {
@@ -92,6 +94,23 @@ export async function onRequestPut(context) {
       newIsPrivate = is_private ? 1 : 0;
     }
     
+    // 检查同一父分类下是否已存在同名分类（排除自己）
+    const checkWhereClause = newParentId ? 'WHERE name = ? AND parent_id = ? AND id != ?' : 'WHERE name = ? AND parent_id IS NULL AND id != ?';
+    const checkQuery = `SELECT id FROM categories ${checkWhereClause}`;
+    const existingCategory = newParentId
+      ? await env.DB.prepare(checkQuery).bind(name, newParentId, id).first()
+      : await env.DB.prepare(checkQuery).bind(name, id).first();
+    
+    if (existingCategory) {
+      const parentText = newParentId ? '该父分类下' : '根目录下';
+      return new Response(JSON.stringify({ 
+        error: `分类"${name}"已存在于${parentText}，请使用其他名称` 
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     await env.DB.prepare(
       'UPDATE categories SET name = ?, parent_id = ?, depth = ?, position = ?, is_private = ? WHERE id = ?'
     ).bind(name, newParentId || null, newDepth, newPosition, newIsPrivate, id).run();
@@ -107,6 +126,17 @@ export async function onRequestPut(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    // 检测 SQLite UNIQUE 约束错误
+    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+      const parentText = newParentId ? '该父分类下' : '根目录下';
+      return new Response(JSON.stringify({ 
+        error: `分类"${name}"已存在于${parentText}，请使用其他名称` 
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     return new Response(JSON.stringify({ error: 'Failed to update category' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

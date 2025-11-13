@@ -47,9 +47,13 @@ export async function onRequestGet(context) {
 // POST create category (with optional parent_id for nested structure)
 export async function onRequestPost(context) {
   const { request, env } = context;
+  let name, parent_id;
   
   try {
-    const { name, parent_id, is_private } = await request.json();
+    const body = await request.json();
+    name = body.name;
+    parent_id = body.parent_id;
+    const is_private = body.is_private;
     
     // 计算depth
     let depth = 0;
@@ -76,6 +80,23 @@ export async function onRequestPost(context) {
       }
     }
     
+    // 检查同一父分类下是否已存在同名分类
+    const checkWhereClause = parent_id ? 'WHERE name = ? AND parent_id = ?' : 'WHERE name = ? AND parent_id IS NULL';
+    const checkQuery = `SELECT id FROM categories ${checkWhereClause}`;
+    const existingCategory = parent_id
+      ? await env.DB.prepare(checkQuery).bind(name, parent_id).first()
+      : await env.DB.prepare(checkQuery).bind(name).first();
+    
+    if (existingCategory) {
+      const parentText = parent_id ? '该父分类下' : '根目录下';
+      return new Response(JSON.stringify({ 
+        error: `分类"${name}"已存在于${parentText}，请使用其他名称` 
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     // 获取同一父分类下的最大position
     const whereClause = parent_id ? 'WHERE parent_id = ?' : 'WHERE parent_id IS NULL';
     const query = `SELECT COALESCE(MAX(position), -1) as position FROM categories ${whereClause}`;
@@ -99,6 +120,17 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    // 检测 SQLite UNIQUE 约束错误
+    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+      const parentText = parent_id ? '该父分类下' : '根目录下';
+      return new Response(JSON.stringify({ 
+        error: `分类"${name}"已存在于${parentText}，请使用其他名称` 
+      }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     return new Response(JSON.stringify({ error: 'Failed to create category' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
